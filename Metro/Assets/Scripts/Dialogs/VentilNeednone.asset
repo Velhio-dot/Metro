@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20d7832be1b34044182b7d0b14379495, type: 3}
+  m_Name: VentilNeednone
+  m_EditorClassIdentifier: Assembly-CSharp::DialogueData
+  lines:
+  - speakerName: 
+    text: "\u041D\u0435\u0442 \u0432\u0435\u043D\u0442\u0438\u043B\u044F"
+    speakerPortrait: {fileID: 0}
+    eventAfterLine: {fileID: 0}
+    giveItemAfterLine: 0
+    itemToGive: {fileID: 0}
+  canBeSkipped: 1
+  blockPlayerMovement: 1
