@@ -5,11 +5,11 @@ public class PlayerHealth : MonoBehaviour
 {
     [Header("Health Settings")]
     [SerializeField] private float maxHealth = 100f;
-    [SerializeField] private float currentHealth;
 
     [Header("Visual Reference")]
-    [SerializeField] private PlayerVisual playerVisual; // ← ДОБАВЬ ССЫЛКУ
+    [SerializeField] private PlayerVisual playerVisual;
 
+    private float currentHealth;
     private bool isDead = false;
 
     public float Health => currentHealth;
@@ -17,13 +17,16 @@ public class PlayerHealth : MonoBehaviour
 
     void Start()
     {
-        if (DataCoordinator.Instance != null && DataCoordinator.Instance.PlayerData != null)
+        // Загружаем здоровье из DataCoordinator
+        if (DataCoordinator.Instance != null)
         {
-            currentHealth = DataCoordinator.Instance.PlayerData.CurrentHealth;
+            currentHealth = DataCoordinator.Instance.PlayerHealth;
+            Debug.Log($"PlayerHealth: загружено здоровье {currentHealth}");
         }
         else
         {
             currentHealth = maxHealth;
+            Debug.LogWarning("PlayerHealth: DataCoordinator не найден, используется maxHealth");
         }
 
         // Автоматически находим PlayerVisual если не назначен
@@ -34,18 +37,34 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
+    void Update()
+    {
+        // Синхронизируем здоровье с DataCoordinator (на всякий случай)
+        // Но только если оно изменилось и мы не мертвы
+        if (!isDead && DataCoordinator.Instance != null)
+        {
+            if (Mathf.Abs(DataCoordinator.Instance.PlayerHealth - currentHealth) > 0.01f)
+            {
+                DataCoordinator.Instance.PlayerHealth = currentHealth;
+            }
+        }
+    }
+
     public void TakeDamage(float damage)
     {
         if (isDead) return;
 
         currentHealth -= damage;
 
-        
-        //if (DataCoordinator.Instance != null)
-        //{
-        //    DataCoordinator.Instance.PlayerData.CurrentHealth = currentHealth;
-        //}
-        // Проверяем на смерть (включая мгновенную)
+        // Обновляем в DataCoordinator
+        if (DataCoordinator.Instance != null)
+        {
+            DataCoordinator.Instance.PlayerHealth = currentHealth;
+        }
+
+        Debug.Log($"Player получил урон: {damage}, здоровье: {currentHealth}");
+
+        // Проверяем на смерть
         if (currentHealth <= 0 || damage >= 999f)
         {
             Die();
@@ -60,7 +79,7 @@ public class PlayerHealth : MonoBehaviour
         // Запускаем анимацию смерти через PlayerVisual
         if (playerVisual != null)
         {
-            playerVisual.PlayDeathAnimation(); // ← ДОБАВЬ ЭТОТ МЕТОД В PlayerVisual
+            playerVisual.PlayDeathAnimation();
         }
         else
         {
@@ -73,14 +92,11 @@ public class PlayerHealth : MonoBehaviour
             player.enabled = false;
         }
 
-        // Отключаем коллайдеры чтобы провалиться сквозь землю
+        // Отключаем коллайдеры
         if (TryGetComponent<Collider2D>(out Collider2D collider))
         {
             collider.enabled = false;
         }
-
-        // Отключаем инвентарь и другие компоненты если есть
-       
 
         // Перезагружаем сцену через 3 секунды
         Invoke(nameof(ReloadScene), 3f);
@@ -91,16 +107,44 @@ public class PlayerHealth : MonoBehaviour
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 
-    // Для лечения или установки здоровья извне
     public void Heal(float amount)
     {
+        if (isDead) return;
+
         currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+
+        // Обновляем в DataCoordinator
+        if (DataCoordinator.Instance != null)
+        {
+            DataCoordinator.Instance.PlayerHealth = currentHealth;
+        }
+
         Debug.Log($"Player healed. Health: {currentHealth}");
     }
 
     public void SetHealth(float health)
     {
         currentHealth = Mathf.Clamp(health, 0, maxHealth);
+
+        // Обновляем в DataCoordinator
+        if (DataCoordinator.Instance != null)
+        {
+            DataCoordinator.Instance.PlayerHealth = currentHealth;
+        }
+
         Debug.Log($"Health set to: {currentHealth}");
+    }
+
+    // Для чекпоинтов - полное восстановление
+    public void RestoreFullHealth()
+    {
+        currentHealth = maxHealth;
+
+        if (DataCoordinator.Instance != null)
+        {
+            DataCoordinator.Instance.PlayerHealth = currentHealth;
+        }
+
+        Debug.Log("Health fully restored!");
     }
 }
