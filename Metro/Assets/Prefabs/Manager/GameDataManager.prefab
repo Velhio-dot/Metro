@@ -49,6 +49,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DataCoordinator
   itemDatabase: {fileID: 11400000, guid: 4f06075d70c8e2a4ea099f8fbf3c5d4b, type: 2}
+  playerSettings: {fileID: 11400000, guid: f60ce5e23ebb53e4bbf53bebf403595f, type: 2}
   autoSaveOnSceneChange: 1
 --- !u!114 &6264962270880670991
 MonoBehaviour:

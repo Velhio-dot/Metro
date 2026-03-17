@@ -37,30 +37,18 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        // Синхронизируем здоровье с DataCoordinator (на всякий случай)
-        // Но только если оно изменилось и мы не мертвы
-        if (!isDead && DataCoordinator.Instance != null)
-        {
-            if (Mathf.Abs(DataCoordinator.Instance.PlayerHealth - currentHealth) > 0.01f)
-            {
-                DataCoordinator.Instance.PlayerHealth = currentHealth;
-            }
-        }
-    }
+
 
     public void TakeDamage(float damage)
     {
-        if (isDead) return;
+        if (isDead || damage <= 0) return;
 
         currentHealth -= damage;
+        currentHealth = Mathf.Max(0, currentHealth);
 
         // Обновляем в DataCoordinator
-        if (DataCoordinator.Instance != null)
-        {
-            DataCoordinator.Instance.PlayerHealth = currentHealth;
-        }
+        SaveToCoordinator();
+
 
         Debug.Log($"Player получил урон: {damage}, здоровье: {currentHealth}");
 
@@ -69,6 +57,35 @@ public class PlayerHealth : MonoBehaviour
         {
             Die();
         }
+    }
+
+    public void Heal(float amount)
+    {
+        if (isDead) return;
+
+        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+
+        // Обновляем в DataCoordinator
+        if (DataCoordinator.Instance != null)
+        {
+            DataCoordinator.Instance.PlayerHealth = currentHealth;
+        }
+
+        Debug.Log($"Player healed. Health: {currentHealth}");
+    }
+
+    public void SetHealth(float health)
+    {
+        currentHealth = Mathf.Clamp(health, 0, maxHealth);
+        SaveToCoordinator();
+    }
+
+    public void RestoreFullHealth()
+    {
+        currentHealth = maxHealth;
+        isDead = false;
+        SaveToCoordinator();
+        Debug.Log("Player fully healed");
     }
 
     void Die()
@@ -102,49 +119,38 @@ public class PlayerHealth : MonoBehaviour
         Invoke(nameof(ReloadScene), 3f);
     }
 
+    private void SaveToCoordinator()
+    {
+        if (DataCoordinator.Instance != null)
+        {
+            DataCoordinator.Instance.PlayerHealth = currentHealth;
+        }
+    }
+
     void ReloadScene()
     {
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
-
-    public void Heal(float amount)
+    public void Respawn()
     {
-        if (isDead) return;
+        isDead = false;
+        RestoreFullHealth();
 
-        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
+       
 
-        // Обновляем в DataCoordinator
-        if (DataCoordinator.Instance != null)
+        // Включаем коллайдер
+        if (TryGetComponent<Collider2D>(out var collider))
         {
-            DataCoordinator.Instance.PlayerHealth = currentHealth;
+            collider.enabled = true;
         }
 
-        Debug.Log($"Player healed. Health: {currentHealth}");
-    }
-
-    public void SetHealth(float health)
-    {
-        currentHealth = Mathf.Clamp(health, 0, maxHealth);
-
-        // Обновляем в DataCoordinator
-        if (DataCoordinator.Instance != null)
-        {
-            DataCoordinator.Instance.PlayerHealth = currentHealth;
-        }
-
-        Debug.Log($"Health set to: {currentHealth}");
-    }
-
-    // Для чекпоинтов - полное восстановление
-    public void RestoreFullHealth()
-    {
-        currentHealth = maxHealth;
-
-        if (DataCoordinator.Instance != null)
-        {
-            DataCoordinator.Instance.PlayerHealth = currentHealth;
-        }
-
-        Debug.Log("Health fully restored!");
+        Debug.Log("Player respawned");
     }
 }
+
+
+
+
+
+
+

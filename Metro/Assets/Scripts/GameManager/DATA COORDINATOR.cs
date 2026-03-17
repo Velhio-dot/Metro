@@ -5,42 +5,44 @@ public class DataCoordinator : MonoBehaviour
 {
     public static DataCoordinator Instance { get; private set; }
 
+    [Header("Ссылки")]
     [SerializeField] private ItemDatabaseSO itemDatabase;
-    [SerializeField] private PlayerDataSO playerSettings;  // Только настройки!
+    [SerializeField] private PlayerDataSO playerSettings;
+    
+    [Header("Настройки")]
     [SerializeField] private bool autoSaveOnSceneChange = true;
-
+    
     private SaveManager saveManager;
     private InventoryManager inventoryManager;
     private ProgressManager progressManager;
-
-    // ТЕКУЩИЕ ДАННЫЕ ИГРЫ (единственный источник)
+    
+    // Данные для спавна
+    private string targetSpawnId = "";
+    
+    // События
+    public event System.Action OnPlayerDiedData;
+    
     private GameData currentGame = new GameData();
 
-    // Публичные свойства для доступа из других скриптов
     public GameData CurrentGame => currentGame;
+    public string TargetSpawnId => targetSpawnId;
 
-    // Для обратной совместимости с вашими скриптами
-    public PlayerInventory PlayerInventory => inventoryManager?.PlayerInventory;
-
-    // Здоровье теперь прямо из GameData
     public float PlayerHealth
     {
         get => currentGame.currentHealth;
         set
         {
-            currentGame.currentHealth = Mathf.Clamp(value, 0, playerSettings.MaxHealth);
-
-            // Если здоровье упало до 0, можно добавить логику смерти
+            currentGame.currentHealth = Mathf.Clamp(value, 0, playerSettings != null ? playerSettings.MaxHealth : 100f);
             if (currentGame.currentHealth <= 0)
             {
-                Debug.Log("Player health reached 0 in DataCoordinator");
+                OnPlayerDiedData?.Invoke();
             }
         }
     }
 
     void Awake()
     {
-        if (Instance != null)
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
@@ -51,23 +53,53 @@ public class DataCoordinator : MonoBehaviour
         SceneManager.sceneLoaded += OnSceneLoaded;
 
         InitializeManagers();
-        LoadOrCreateGame();
     }
 
     void InitializeManagers()
     {
-        saveManager = GetComponent<SaveManager>() ?? gameObject.AddComponent<SaveManager>();
-        inventoryManager = GetComponent<InventoryManager>() ?? gameObject.AddComponent<InventoryManager>();
-        progressManager = GetComponent<ProgressManager>() ?? gameObject.AddComponent<ProgressManager>();
+        saveManager = GetComponent<SaveManager>();
+        if (saveManager == null) saveManager = gameObject.AddComponent<SaveManager>();
+        
+        inventoryManager = GetComponent<InventoryManager>();
+        if (inventoryManager == null) inventoryManager = gameObject.AddComponent<InventoryManager>();
+        
+        progressManager = GetComponent<ProgressManager>();
+        if (progressManager == null) progressManager = gameObject.AddComponent<ProgressManager>();
     }
 
-    void LoadOrCreateGame()
+    // ===== УПРАВЛЕНИЕ СПАВНАМИ =====
+
+    public void SetTargetSpawn(string spawnId)
     {
-        if (saveManager.SaveFileExists())
-            LoadGame();
-        else
-            CreateNewGame();
+        targetSpawnId = spawnId;
+        Debug.Log($"DataCoordinator: установлен целевой спавн {spawnId}");
     }
+
+    public void ClearTargetSpawn()
+    {
+        targetSpawnId = "";
+    }
+
+    // ===== ОБРАБОТКА ЗАГРУЗКИ СЦЕНЫ =====
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        Debug.Log($"DataCoordinator: сцена загружена - {scene.name}");
+        
+        // Обновляем текущую сцену в данных
+        currentGame.currentScene = scene.name;
+        
+        // Применяем данные к системам
+        ApplyGameToAllSystems();
+        
+        // Автосохранение
+        if (autoSaveOnSceneChange)
+        {
+            SaveGame();
+        }
+    }
+
+    // ===== СОХРАНЕНИЕ/ЗАГРУЗКА =====
 
     public void CreateNewGame()
     {
@@ -78,12 +110,8 @@ public class DataCoordinator : MonoBehaviour
 
     public void SaveGame()
     {
-        // Собираем текущее состояние в currentGame
         CollectCurrentState();
-
-        // Сохраняем в файл
         saveManager.SaveToFile(currentGame);
-
         Debug.Log($"Игра сохранена. Здоровье: {currentGame.currentHealth}");
     }
 
@@ -93,8 +121,19 @@ public class DataCoordinator : MonoBehaviour
         if (loaded != null)
         {
             currentGame = loaded;
-            ApplyGameToAllSystems();
-            Debug.Log($"Игра загружена. Здоровье: {currentGame.currentHealth}");
+            
+            if (!string.IsNullOrEmpty(currentGame.currentScene))
+            {
+                // Используем SceneLoader для загрузки сцены
+                if (SceneLoader.Instance != null)
+                {
+                    SceneLoader.Instance.LoadScene(currentGame.currentScene, true);
+                }
+                else
+                {
+                    SceneManager.LoadScene(currentGame.currentScene);
+                }
+            }
         }
         else
         {
@@ -104,78 +143,33 @@ public class DataCoordinator : MonoBehaviour
 
     private void CollectCurrentState()
     {
-        // Позиция игрока
         if (Player1.Instance != null)
         {
             currentGame.playerPosition = Player1.Instance.transform.position;
             currentGame.playerLastDirection = Player1.Instance.LastMovementDirection;
-            currentGame.playerIsSprinting = Player1.Instance.IsSprinting;
-
-            // Фонарик
-            var flashlight = Player1.Instance.GetFlashlight();
-            if (flashlight != null)
-                currentGame.flashlightEnabled = flashlight.IsActive;
+            
+            var playerHealth = Player1.Instance.GetComponent<PlayerHealth>();
+            if (playerHealth != null)
+            {
+                currentGame.currentHealth = playerHealth.Health;
+            }
         }
 
-        // Текущая сцена
         currentGame.currentScene = SceneManager.GetActiveScene().name;
-
-        // Инвентарь
         inventoryManager?.SaveToGameData(currentGame);
-
-        // Прогресс
         progressManager?.SaveToGameData(currentGame);
     }
 
     private void ApplyGameToAllSystems()
     {
-        // Инвентарь
         inventoryManager?.LoadFromGameData(currentGame, itemDatabase);
-
-        // Прогресс
         progressManager?.LoadFromGameData(currentGame);
-
-        // Позиция игрока (если есть и не нулевая)
-        if (Player1.Instance != null && currentGame.playerPosition != Vector3.zero)
-        {
-            Player1.Instance.transform.position = currentGame.playerPosition;
-        }
-
-        // Фонарик
-        if (Player1.Instance != null)
-        {
-            var flashlight = Player1.Instance.GetFlashlight();
-            if (flashlight != null && currentGame.flashlightEnabled != flashlight.IsActive)
-                flashlight.ToggleFlashlight();
-        }
-    }
-
-    void OnSceneLoaded(Scene scene, LoadSceneMode mode)
-    {
-        if (autoSaveOnSceneChange) SaveGame();
+        
+        // Здоровье применится в PlayerHealth.Start()
     }
 
     void OnDestroy()
     {
         SceneManager.sceneLoaded -= OnSceneLoaded;
-    }
-
-    // Публичные методы
-    public void MarkItemAsPermanentlyCollected(string itemId)
-    {
-        progressManager?.MarkItemAsPermanentlyCollected(itemId);
-        SaveGame();
-    }
-
-    public bool IsItemPermanentlyCollected(string itemId)
-        => progressManager?.IsItemPermanentlyCollected(itemId) ?? false;
-
-    public void MarkDialoguePointCompleted(string pointId)
-        => progressManager?.MarkDialoguePointCompleted(pointId);
-
-    public void DeleteSave()
-    {
-        saveManager.DeleteSaveFile();
-        CreateNewGame();
     }
 }
