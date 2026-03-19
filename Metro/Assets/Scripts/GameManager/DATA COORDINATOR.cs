@@ -3,6 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class DataCoordinator : MonoBehaviour
 {
+
     public static DataCoordinator Instance { get; private set; }
 
     [Header("Ссылки")]
@@ -42,6 +43,7 @@ public class DataCoordinator : MonoBehaviour
 
     void Awake()
     {
+        //Debug.Log($"DataCoordinator.Awake: currentGame.currentHealth = {currentGame.currentHealth}");
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -72,7 +74,7 @@ public class DataCoordinator : MonoBehaviour
     public void SetTargetSpawn(string spawnId)
     {
         targetSpawnId = spawnId;
-        Debug.Log($"DataCoordinator: установлен целевой спавн {spawnId}");
+        //Debug.Log($"DataCoordinator: установлен целевой спавн {spawnId}");
     }
 
     public void ClearTargetSpawn()
@@ -84,7 +86,7 @@ public class DataCoordinator : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log($"DataCoordinator: сцена загружена - {scene.name}");
+        //Debug.Log($"DataCoordinator: сцена загружена - {scene.name}");
         
         // Обновляем текущую сцену в данных
         currentGame.currentScene = scene.name;
@@ -92,11 +94,7 @@ public class DataCoordinator : MonoBehaviour
         // Применяем данные к системам
         ApplyGameToAllSystems();
         
-        // Автосохранение
-        if (autoSaveOnSceneChange)
-        {
-            SaveGame();
-        }
+     
     }
 
     // ===== СОХРАНЕНИЕ/ЗАГРУЗКА =====

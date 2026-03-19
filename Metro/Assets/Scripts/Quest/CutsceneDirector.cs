@@ -93,7 +93,7 @@ public class CutsceneDirector : MonoBehaviour
     IEnumerator PlayCutsceneRoutine()
     {
         isPlaying = true;
-        Debug.Log($"Запуск катсцены ({cutsceneType}): {name}");
+        //Debug.Log($"Запуск катсцены ({cutsceneType}): {name}");
 
         // ===== ПОДГОТОВКА =====
         switch (cutsceneType)

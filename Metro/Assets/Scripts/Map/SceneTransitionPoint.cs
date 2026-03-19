@@ -28,6 +28,7 @@ public class SceneTransitionPoint : MonoBehaviour
         // Сохраняем целевой спавн в DataCoordinator
         if (DataCoordinator.Instance != null)
         {
+            DataCoordinator.Instance.SaveGame();
             DataCoordinator.Instance.SetTargetSpawn(targetSpawnId);
         }
 

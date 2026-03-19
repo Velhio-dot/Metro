@@ -41,13 +41,20 @@ public class InventoryManager : MonoBehaviour
 
     public void LoadFromGameData(GameData data, ItemDatabaseSO itemDatabase)
     {
-        if (data == null || itemDatabase == null) return;
-
+        Debug.Log("=== InventoryManager.LOAD FROM GAME DATA ===");
+        if (data == null || itemDatabase == null)
+        {
+            Debug.LogError("data = null");
+            return;
+        }
+        //Debug.Log($"data.inventorySlots.Length = {data.inventorySlots.Length}");
+        //Debug.Log($"playerInventory.Slots.Length = {playerInventory.Slots.Length}");
         playerInventory.ClearAll();
 
         for (int i = 0; i < data.inventorySlots.Length && i < playerInventory.Slots.Length; i++)
         {
             var slot = data.inventorySlots[i];
+            //Debug.Log($"Слот {i}: isEmpty={slot.isEmpty}, itemId={slot.itemId}, quantity={slot.quantity}");
             if (!slot.isEmpty)
             {
                 var item = itemDatabase.GetItemById(slot.itemId);
@@ -64,7 +71,14 @@ public class InventoryManager : MonoBehaviour
 
     public void SaveToGameData(GameData data)
     {
-        if (data == null) return;
+        //Debug.Log("=== InventoryManager.SAVE TO GAME DATA ===");
+        if (data == null)
+        {
+            Debug.LogError("data = null");
+            return;
+        }
+        //Debug.Log($"Сохраняем инвентарь. Использовано слотов: {playerInventory.UsedSlots}");
+
 
         for (int i = 0; i < playerInventory.Slots.Length && i < data.inventorySlots.Length; i++)
         {
@@ -73,8 +87,10 @@ public class InventoryManager : MonoBehaviour
 
             if (!slot.IsEmpty)
             {
+
                 data.inventorySlots[i].itemId = slot.itemData.itemId;
                 data.inventorySlots[i].quantity = slot.quantity;
+                Debug.Log($"Слот {i}: сохраняем {slot.itemData.itemName} (ID: {slot.itemData.itemId}) x{slot.quantity}");
             }
         }
     }

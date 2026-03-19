@@ -179,7 +179,7 @@ MonoBehaviour:
   attackDamage: 30
   attackCooldown: 2
   attackTimeout: 3
-  instantKill: 1
+  instantKill: 0
   instantKillDamage: 999
   foxVisual: {fileID: 599921854180494634}
 --- !u!1 &6152815711650273266

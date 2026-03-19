@@ -6224,6 +6224,14 @@ PrefabInstance:
       propertyPath: _chasingSpeedMulti
       value: 3
       objectReference: {fileID: 0}
+    - target: {fileID: 3166564097069592055, guid: dad258c92d1dd6e4a9eda84b287108d5, type: 3}
+      propertyPath: instantKill
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3166564097069592055, guid: dad258c92d1dd6e4a9eda84b287108d5, type: 3}
+      propertyPath: attackDamage
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4345502244441880190, guid: dad258c92d1dd6e4a9eda84b287108d5, type: 3}
       propertyPath: m_Name
       value: Shadow
@@ -29770,7 +29778,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3166564097069592055, guid: dad258c92d1dd6e4a9eda84b287108d5, type: 3}
       propertyPath: instantKill
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4059670991415502312, guid: dad258c92d1dd6e4a9eda84b287108d5, type: 3}
       propertyPath: reactionType
