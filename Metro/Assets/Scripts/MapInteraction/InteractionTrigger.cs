@@ -2,44 +2,44 @@ using UnityEngine;
 using UnityEngine.Events;
 using System.Collections;
 
-public class FixedDialogueTrigger : MonoBehaviour, IInteractable
+public class InteractionTrigger : MonoBehaviour, IInteractable
 {
-    [Header("Диалоги")]
+    [Header("Тип взаимодействия")]
+    [SerializeField] private InteractionType interactionType = InteractionType.Dialogue;
+
+    [Header("Общие настройки")]
+    [SerializeField] private bool requireKeyPress = true;
+    [SerializeField] private bool oneTimeOnly = false;
+    [SerializeField] private bool autoTrigger = false;
+    [SerializeField] private float autoTriggerDelay = 0f;
+
+    [Header("Диалог (если тип Dialogue)")]
     [SerializeField] private DialogueData mainDialogue;
     [SerializeField] private DialogueData alternativeDialogue;
-
-    [Header("Требования")]
     [SerializeField] private bool requireItem = false;
     [SerializeField] private ItemDataSO requiredItem;
     [SerializeField] private bool consumeItem = false;
-
-    [Header("Спикер")]
     [SerializeField] private string speakerName = "Персонаж";
     [SerializeField] private Sprite speakerPortrait;
-
-    [Header("Настройки запуска")]
-    [SerializeField] private bool autoTrigger = false;
-    [SerializeField] private bool requireKeyPress = true;
-    [SerializeField] private bool oneTimeOnly = false;
-
-    [Header("Для автодиалогов")]
-    [SerializeField] private float autoTriggerDelay = 0f;
     [SerializeField] private bool showSpeakerInAutoDialogue = false;
+
+    [Header("Баннер (если тип Banner)")]
+    [SerializeField] private string bannerText = "Информация";
+    [SerializeField] private float bannerDuration = 3f;
 
     [Header("Визуальные подсказки")]
     [SerializeField] private GameObject interactionHint;
     [SerializeField] private bool showHintOnlyWhenClose = true;
 
     [Header("События")]
-    public UnityEvent onDialogueStart;
-    public UnityEvent onDialogueEnd;
+    public UnityEvent onInteractionStart;
+    public UnityEvent onInteractionEnd;
 
     private bool hasBeenUsed = false;
     private bool playerInRange = false;
-    private bool isDialogueStarting = false; // ЗАЩИТА
+    private bool isInteracting = false;
     private Player1 player;
     private Coroutine autoTriggerCoroutine;
-    private Coroutine waitForEndCoroutine;
 
     void Start()
     {
@@ -49,16 +49,15 @@ public class FixedDialogueTrigger : MonoBehaviour, IInteractable
 
     void Update()
     {
-        // ТОЛЬКО автозапуск, без проверки клавиши
-        if (playerInRange && !hasBeenUsed && autoTrigger && !requireKeyPress)
+        if (playerInRange && !hasBeenUsed && autoTrigger && !requireKeyPress && !isInteracting)
         {
             if (autoTriggerCoroutine == null && autoTriggerDelay > 0)
             {
                 autoTriggerCoroutine = StartCoroutine(DelayedAutoTrigger());
             }
-            else if (autoTriggerDelay <= 0 && !isDialogueStarting)
+            else if (autoTriggerDelay <= 0)
             {
-                StartDialogue();
+                StartInteraction();
             }
         }
     }
@@ -66,27 +65,58 @@ public class FixedDialogueTrigger : MonoBehaviour, IInteractable
     IEnumerator DelayedAutoTrigger()
     {
         yield return new WaitForSeconds(autoTriggerDelay);
-        StartDialogue();
+        StartInteraction();
     }
 
     public void Interact()
     {
-        // ЕДИНСТВЕННЫЙ способ ручного запуска
-        if (playerInRange && !hasBeenUsed && requireKeyPress && !isDialogueStarting)
+        if (playerInRange && !hasBeenUsed && requireKeyPress && !isInteracting)
         {
-            StartDialogue();
+            StartInteraction();
         }
+    }
+
+    void StartInteraction()
+    {
+        if (isInteracting) return;
+
+        isInteracting = true;
+        if (oneTimeOnly) hasBeenUsed = true;
+
+        onInteractionStart?.Invoke();
+
+        switch (interactionType)
+        {
+            case InteractionType.Dialogue:
+                StartDialogue();
+                break;
+            case InteractionType.Banner:
+                StartBanner();
+                break;
+        }
+
+        UpdateHintVisibility();
     }
 
     void StartDialogue()
     {
-        // ЗАЩИТА ОТ ПОВТОРНОГО ЗАПУСКА
-        if (isDialogueStarting || DialogueManager.Instance == null) return;
-        if (DialogueManager.Instance.IsDialogueActive) return;
+        if (BannerManager.Instance != null && BannerManager.Instance.IsShowing)
+        {
+            EndInteraction();
+            return;
+        }
 
-        isDialogueStarting = true;
+        if (DialogueManager.Instance == null)
+        {
+            EndInteraction();
+            return;
+        }
 
-        if (oneTimeOnly) hasBeenUsed = true;
+        if (DialogueManager.Instance.IsDialogueActive)
+        {
+            EndInteraction();
+            return;
+        }
 
         bool hasRequiredItem = CheckRequiredItem();
         DialogueData dialogueToUse = GetDialogueToUse(hasRequiredItem);
@@ -94,7 +124,7 @@ public class FixedDialogueTrigger : MonoBehaviour, IInteractable
         if (dialogueToUse == null)
         {
             Debug.LogWarning($"{name}: Нет диалога!");
-            isDialogueStarting = false;
+            EndInteraction();
             return;
         }
 
@@ -102,14 +132,57 @@ public class FixedDialogueTrigger : MonoBehaviour, IInteractable
         if (autoTrigger && !showSpeakerInAutoDialogue)
             actualSpeakerName = "";
 
-        onDialogueStart?.Invoke();
-
+        // Подписываемся на окончание диалога
+        DialogueManager.Instance.OnDialogueEnded += OnDialogueEnded;
         DialogueManager.Instance.StartDialogue(dialogueToUse, actualSpeakerName, speakerPortrait);
 
-        // Запускаем ожидание конца диалога
-        if (waitForEndCoroutine != null)
-            StopCoroutine(waitForEndCoroutine);
-        waitForEndCoroutine = StartCoroutine(WaitForDialogueEnd(hasRequiredItem));
+        if (hasRequiredItem && requireItem && consumeItem && requiredItem != null)
+        {
+            ConsumeRequiredItem();
+        }
+    }
+
+    void StartBanner()
+    {
+        if (DialogueManager.Instance != null && DialogueManager.Instance.IsDialogueActive)
+        {
+            EndInteraction();
+            return;
+        }
+
+        if (BannerManager.Instance == null)
+        {
+            EndInteraction();
+            return;
+        }
+
+        // Подписываемся на окончание баннера
+        BannerManager.Instance.OnBannerHidden += OnBannerEnded;
+        BannerManager.Instance.ShowBanner(bannerText, bannerDuration);
+    }
+
+    void OnDialogueEnded()
+    {
+        // Отписываемся
+        if (DialogueManager.Instance != null)
+            DialogueManager.Instance.OnDialogueEnded -= OnDialogueEnded;
+
+        EndInteraction();
+    }
+
+    void OnBannerEnded()
+    {
+        // Отписываемся
+        if (BannerManager.Instance != null)
+            BannerManager.Instance.OnBannerHidden -= OnBannerEnded;
+
+        EndInteraction();
+    }
+
+    void EndInteraction()
+    {
+        onInteractionEnd?.Invoke();
+        isInteracting = false;
 
         if (autoTriggerCoroutine != null)
         {
@@ -118,28 +191,6 @@ public class FixedDialogueTrigger : MonoBehaviour, IInteractable
         }
 
         UpdateHintVisibility();
-    }
-
-    IEnumerator WaitForDialogueEnd(bool hadRequiredItem)
-    {
-        // Сохраняем, какой диалог был выбран
-        bool wasMainDialogue = hadRequiredItem && mainDialogue != null;
-        // Ждем пока диалог активен
-        while (DialogueManager.Instance != null && DialogueManager.Instance.IsDialogueActive)
-        {
-            yield return null;
-        }
-
-        // Диалог закончился
-        if (hadRequiredItem && requireItem && consumeItem && requiredItem != null)
-            ConsumeRequiredItem();
-
-        if (wasMainDialogue)
-        {
-            onDialogueEnd?.Invoke();
-        }
-        UpdateHintVisibility();
-        isDialogueStarting = false; // СБРАСЫВАЕМ ЗАЩИТУ
     }
 
     bool CheckRequiredItem()
@@ -206,11 +257,17 @@ public class FixedDialogueTrigger : MonoBehaviour, IInteractable
     {
         if (interactionHint == null) return;
 
-        bool shouldShow = !hasBeenUsed && playerInRange;
+        bool shouldShow = !hasBeenUsed && playerInRange && !isInteracting;
 
         if (showHintOnlyWhenClose)
             interactionHint.SetActive(shouldShow);
         else
             interactionHint.SetActive(!hasBeenUsed);
+    }
+
+    public enum InteractionType
+    {
+        Dialogue,
+        Banner
     }
 }
