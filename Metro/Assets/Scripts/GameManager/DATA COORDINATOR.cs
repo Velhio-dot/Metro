@@ -43,6 +43,7 @@ public class DataCoordinator : MonoBehaviour
 
     void Awake()
     {
+        Debug.Log($"=== ManagerDebugger: объект {gameObject.name} проснулся на сцене {gameObject.scene.name} ===");
         //Debug.Log($"DataCoordinator.Awake: currentGame.currentHealth = {currentGame.currentHealth}");
         if (Instance != null && Instance != this)
         {
@@ -168,6 +169,8 @@ public class DataCoordinator : MonoBehaviour
 
     void OnDestroy()
     {
+        Debug.LogError($"!!! ОБЪЕКТ {gameObject.name} УНИЧТОЖАЕТСЯ !!!");
+        Debug.LogError($"Стек вызовов: {StackTraceUtility.ExtractStackTrace()}");
         SceneManager.sceneLoaded -= OnSceneLoaded;
     }
 }

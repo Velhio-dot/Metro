@@ -19,21 +19,21 @@ public class BannerManager : MonoBehaviour
     private Coroutine currentBanner;
     private bool isShowing = false;
 
-    void Awake()
-    {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+    //void Awake()
+    //{
+    //    if (Instance == null)
+    //    {
+    //        Instance = this;
+    //        DontDestroyOnLoad(gameObject);
+    //    }
+    //    else
+    //    {
+    //        Destroy(gameObject);
+    //    }
 
-        if (bannerPanel != null)
-            bannerPanel.SetActive(false);
-    }
+    //    if (bannerPanel != null)
+    //        bannerPanel.SetActive(false);
+    //}
 
     public void ShowBanner(string text, float duration = -1)
     {
