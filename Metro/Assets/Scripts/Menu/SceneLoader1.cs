@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using System.Collections;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class SceneLoader : MonoBehaviour
@@ -8,39 +9,59 @@ public class SceneLoader : MonoBehaviour
     [SerializeField] private CanvasGroup fadeCanvas;
     [SerializeField] private float fadeDuration = 1f;
 
-    private bool isTransitioning = false;
+    private bool isTransitioning;
 
-    void Awake()
+    private void Awake()
     {
-        if (Instance == null)
+        if (!TryInitializeSingleton())
         {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-
-            if (fadeCanvas != null)
-            {
-                fadeCanvas.gameObject.SetActive(true);
-                fadeCanvas.alpha = 0f;
-            }
+            return;
         }
-        else
+
+        InitializeFadeCanvas();
+    }
+
+    private bool TryInitializeSingleton()
+    {
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
+            return false;
         }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        return true;
+    }
+
+    private void InitializeFadeCanvas()
+    {
+        if (fadeCanvas == null)
+        {
+            return;
+        }
+
+        fadeCanvas.gameObject.SetActive(true);
+        fadeCanvas.alpha = 0f;
     }
 
     public void LoadScene(string sceneName, bool useFade = true)
     {
-        if (isTransitioning) return;
+        if (isTransitioning)
+        {
+            return;
+        }
 
         StartCoroutine(LoadSceneRoutine(sceneName, useFade));
     }
 
     public void LoadSceneWithSave(string sceneName, bool isNewGame)
     {
-        if (isTransitioning) return;
+        if (isTransitioning)
+        {
+            return;
+        }
 
-        // ★★★ ИСПОЛЬЗУЕМ DataCoordinator вместо GameSaveSystem ★★★
         if (DataCoordinator.Instance != null)
         {
             if (isNewGame)
@@ -49,58 +70,68 @@ public class SceneLoader : MonoBehaviour
             }
             else
             {
-                DataCoordinator.Instance.SaveGame(); // Сохраняем перед переходом
+                DataCoordinator.Instance.SaveGame();
             }
         }
         else
         {
-            Debug.LogWarning("DataCoordinator не найден при загрузке сцены");
+            Debug.LogWarning("DataCoordinator �� ������ ��� �������� �����");
         }
 
         LoadScene(sceneName);
     }
 
-    System.Collections.IEnumerator LoadSceneRoutine(string sceneName, bool useFade)
+    private IEnumerator LoadSceneRoutine(string sceneName, bool useFade)
     {
         isTransitioning = true;
 
-        // Затемнение
-        if (useFade && fadeCanvas != null)
+        if (useFade)
         {
-            float elapsed = 0f;
-            while (elapsed < fadeDuration)
-            {
-                elapsed += Time.deltaTime;
-                fadeCanvas.alpha = Mathf.Lerp(0f, 1f, elapsed / fadeDuration);
-                yield return null;
-            }
+            yield return Fade(0f, 1f);
         }
 
-        // Загрузка сцены
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneName);
-
         while (!asyncLoad.isDone)
         {
             yield return null;
         }
 
-        // Осветление
-        if (useFade && fadeCanvas != null)
+        if (useFade)
         {
-            float elapsed = 0f;
-            while (elapsed < fadeDuration)
-            {
-                elapsed += Time.deltaTime;
-                fadeCanvas.alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDuration);
-                yield return null;
-            }
+            yield return Fade(1f, 0f);
         }
 
         isTransitioning = false;
     }
 
+    private IEnumerator Fade(float from, float to)
+    {
+        if (fadeCanvas == null)
+        {
+            yield break;
+        }
+
+        float elapsed = 0f;
+        while (elapsed < fadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            fadeCanvas.alpha = Mathf.Lerp(from, to, elapsed / fadeDuration);
+            yield return null;
+        }
+
+        fadeCanvas.alpha = to;
+    }
+
     public void ReturnToMainMenu()
     {
         LoadScene("MainMenu");
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
+        }
     }
 }

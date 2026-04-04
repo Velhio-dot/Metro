@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+using System.Collections;
+using UnityEngine;
 using UnityEngine.UI;
 
 public class SimpleInventoryUI : MonoBehaviour
@@ -6,22 +7,52 @@ public class SimpleInventoryUI : MonoBehaviour
     [SerializeField] private Image[] slotImages;
     [SerializeField] private Sprite emptySlotSprite;
 
-    void Start()
+    private bool isSubscribed;
+
+    private void OnEnable()
     {
-        if (InventoryManager.Instance == null)
+        StartCoroutine(BindAndRefreshRoutine());
+    }
+
+    private IEnumerator BindAndRefreshRoutine()
+    {
+        while (InventoryManager.Instance == null || InventoryManager.Instance.PlayerInventory == null)
         {
-            Debug.LogError("GameDataManager не найден!");
+            yield return null;
+        }
+
+        SubscribeIfNeeded();
+        UpdateUI();
+    }
+
+    private void SubscribeIfNeeded()
+    {
+        if (isSubscribed || InventoryManager.Instance == null || InventoryManager.Instance.PlayerInventory == null)
+        {
             return;
         }
 
-        // Подписываемся на изменения инвентаря
         InventoryManager.Instance.PlayerInventory.OnInventoryChanged += UpdateUI;
-        UpdateUI(); // Первоначальное обновление
+        isSubscribed = true;
     }
 
-    void UpdateUI()
+    private void UnsubscribeIfNeeded()
     {
-        if (InventoryManager.Instance == null) return;
+        if (!isSubscribed || InventoryManager.Instance == null || InventoryManager.Instance.PlayerInventory == null)
+        {
+            return;
+        }
+
+        InventoryManager.Instance.PlayerInventory.OnInventoryChanged -= UpdateUI;
+        isSubscribed = false;
+    }
+
+    private void UpdateUI()
+    {
+        if (InventoryManager.Instance == null)
+        {
+            return;
+        }
 
         var inventory = InventoryManager.Instance.PlayerInventory;
         var slots = inventory.Slots;
@@ -30,24 +61,19 @@ public class SimpleInventoryUI : MonoBehaviour
         {
             if (!slots[i].IsEmpty && slots[i].itemData != null)
             {
-                // Заполненный слот
                 slotImages[i].sprite = slots[i].itemData.icon;
                 slotImages[i].color = Color.white;
             }
             else
             {
-                // Пустой слот
                 slotImages[i].sprite = emptySlotSprite;
-                slotImages[i].color = new Color(1, 1, 1, 0.3f);
+                slotImages[i].color = new Color(1f, 1f, 1f, 0.3f);
             }
         }
     }
 
-    void OnDestroy()
+    private void OnDisable()
     {
-        if (InventoryManager.Instance != null)
-        {
-            InventoryManager.Instance.PlayerInventory.OnInventoryChanged -= UpdateUI;
-        }
+        UnsubscribeIfNeeded();
     }
 }

@@ -1,5 +1,5 @@
-﻿using UnityEngine;
 using System;
+using UnityEngine;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -14,84 +14,137 @@ public class InventoryManager : MonoBehaviour
     public PlayerInventory PlayerInventory => playerInventory;
     public bool IsFull => playerInventory?.IsFull ?? false;
 
-    void Awake()
+    private void Awake()
     {
-        if (Instance != null)
+        if (!TryInitializeSingleton())
         {
-            Destroy(gameObject);
             return;
         }
+
+        EnsureInventoryCreated();
+    }
+
+    private bool TryInitializeSingleton()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return false;
+        }
+
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        return true;
+    }
 
-        playerInventory = new PlayerInventory();
+    private void EnsureInventoryCreated()
+    {
+        if (playerInventory == null)
+        {
+            playerInventory = new PlayerInventory();
+        }
     }
 
     public bool AddItem(ItemDataSO item, int quantity = 1)
     {
-        if (item == null || quantity <= 0) return false;
+        if (item == null || quantity <= 0)
+        {
+            return false;
+        }
 
-        if (playerInventory.AddItem(item, quantity))
+        EnsureInventoryCreated();
+
+        bool added = playerInventory.AddItem(item, quantity);
+        if (added)
         {
             OnInventoryChanged?.Invoke();
-            return true;
         }
-        return false;
+
+        return added;
     }
 
     public void LoadFromGameData(GameData data, ItemDatabaseSO itemDatabase)
     {
-        Debug.Log("=== InventoryManager.LOAD FROM GAME DATA ===");
-        if (data == null || itemDatabase == null)
+        if (!CanLoadFromData(data, itemDatabase))
         {
-            Debug.LogError("data = null");
             return;
         }
-        //Debug.Log($"data.inventorySlots.Length = {data.inventorySlots.Length}");
-        //Debug.Log($"playerInventory.Slots.Length = {playerInventory.Slots.Length}");
+
+        EnsureInventoryCreated();
         playerInventory.ClearAll();
 
-        for (int i = 0; i < data.inventorySlots.Length && i < playerInventory.Slots.Length; i++)
+        int maxSlotsToCopy = Mathf.Min(data.inventorySlots.Length, playerInventory.Slots.Length);
+        for (int i = 0; i < maxSlotsToCopy; i++)
         {
-            var slot = data.inventorySlots[i];
-            //Debug.Log($"Слот {i}: isEmpty={slot.isEmpty}, itemId={slot.itemId}, quantity={slot.quantity}");
-            if (!slot.isEmpty)
+            var sourceSlot = data.inventorySlots[i];
+            if (sourceSlot.isEmpty)
             {
-                var item = itemDatabase.GetItemById(slot.itemId);
-                if (item != null)
-                {
-                    playerInventory.Slots[i].itemData = item;
-                    playerInventory.Slots[i].quantity = slot.quantity;
-                }
+                continue;
             }
+
+            ItemDataSO item = itemDatabase.GetItemById(sourceSlot.itemId);
+            if (item == null)
+            {
+                continue;
+            }
+
+            playerInventory.Slots[i].itemData = item;
+            playerInventory.Slots[i].quantity = sourceSlot.quantity;
         }
 
+        // Р’Р°Р¶РЅРѕ: СЃР»РѕС‚С‹ Р·Р°РїРѕР»РЅСЏСЋС‚СЃСЏ РЅР°РїСЂСЏРјСѓСЋ, РїРѕСЌС‚РѕРјСѓ РІСЂСѓС‡РЅСѓСЋ СѓРІРµРґРѕРјР»СЏРµРј UI РїРѕСЃР»Рµ Р·Р°РіСЂСѓР·РєРё.
+        playerInventory.NotifyInventoryChanged();
         OnInventoryChanged?.Invoke();
     }
 
     public void SaveToGameData(GameData data)
     {
-        //Debug.Log("=== InventoryManager.SAVE TO GAME DATA ===");
         if (data == null)
         {
-            Debug.LogError("data = null");
             return;
         }
-        //Debug.Log($"Сохраняем инвентарь. Использовано слотов: {playerInventory.UsedSlots}");
 
+        EnsureInventoryCreated();
 
-        for (int i = 0; i < playerInventory.Slots.Length && i < data.inventorySlots.Length; i++)
+        int maxSlotsToCopy = Mathf.Min(playerInventory.Slots.Length, data.inventorySlots.Length);
+        for (int i = 0; i < maxSlotsToCopy; i++)
         {
-            var slot = playerInventory.Slots[i];
-            data.inventorySlots[i].isEmpty = slot.IsEmpty;
+            var sourceSlot = playerInventory.Slots[i];
+            var targetSlot = data.inventorySlots[i];
 
-            if (!slot.IsEmpty)
+            targetSlot.isEmpty = sourceSlot.IsEmpty;
+            if (sourceSlot.IsEmpty)
             {
-
-                data.inventorySlots[i].itemId = slot.itemData.itemId;
-                data.inventorySlots[i].quantity = slot.quantity;
-                Debug.Log($"Слот {i}: сохраняем {slot.itemData.itemName} (ID: {slot.itemData.itemId}) x{slot.quantity}");
+                targetSlot.itemId = "";
+                targetSlot.quantity = 0;
+                continue;
             }
+
+            targetSlot.itemId = sourceSlot.itemData.itemId;
+            targetSlot.quantity = sourceSlot.quantity;
+        }
+    }
+
+    private static bool CanLoadFromData(GameData data, ItemDatabaseSO itemDatabase)
+    {
+        if (data == null || itemDatabase == null)
+        {
+            return false;
+        }
+
+        if (data.inventorySlots == null)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
         }
     }
 }

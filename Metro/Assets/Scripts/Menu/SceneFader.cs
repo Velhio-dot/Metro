@@ -4,43 +4,46 @@ using System.Collections;
 
 public class SceneFader : MonoBehaviour
 {
-    [Header("Настройки")]
+    [Header("РќР°СЃС‚СЂРѕР№РєРё")]
     [SerializeField] private Image fadeImage;
     [SerializeField] private float fadeDuration = 1f;
 
-    [Header("Цвета")]
+    [Header("Р¦РІРµС‚Р°")]
     [SerializeField] private Color fadeColor = Color.black;
 
     private bool isFading = false;
+    private bool isSceneLoadInProgress = false;
 
-    void Awake()
+    public bool IsBusy => isFading || isSceneLoadInProgress;
+
+    private void Awake()
     {
-        // Автоматически находим Image если не назначен
         if (fadeImage == null)
         {
             fadeImage = GetComponent<Image>();
         }
 
-        // Убедимся что объект активен и готов
         if (fadeImage != null)
         {
             fadeImage.gameObject.SetActive(true);
-            fadeImage.raycastTarget = false; // Чтобы клики проходили сквозь
+            fadeImage.raycastTarget = false;
         }
     }
 
-    void Start()
+    private void Start()
     {
-        // При старте - плавное появление
         StartCoroutine(FadeIn());
     }
 
-    // Появление (из черного в прозрачный)
     public IEnumerator FadeIn()
     {
-        if (fadeImage == null || isFading) yield break;
+        if (fadeImage == null || isFading)
+        {
+            yield break;
+        }
 
         isFading = true;
+        SetInputBlocker(true);
         fadeImage.color = fadeColor;
         fadeImage.gameObject.SetActive(true);
 
@@ -54,15 +57,19 @@ public class SceneFader : MonoBehaviour
         }
 
         fadeImage.gameObject.SetActive(false);
+        SetInputBlocker(false);
         isFading = false;
     }
 
-    // Исчезновение (из прозрачного в черный)
     public IEnumerator FadeOut()
     {
-        if (fadeImage == null || isFading) yield break;
+        if (fadeImage == null || isFading)
+        {
+            yield break;
+        }
 
         isFading = true;
+        SetInputBlocker(true);
         fadeImage.color = new Color(fadeColor.r, fadeColor.g, fadeColor.b, 0f);
         fadeImage.gameObject.SetActive(true);
 
@@ -78,26 +85,43 @@ public class SceneFader : MonoBehaviour
         isFading = false;
     }
 
-    // Загрузка сцены с фейдом
     public void LoadSceneWithFade(string sceneName)
     {
-        if (isFading) return;
+        if (isSceneLoadInProgress)
+        {
+            return;
+        }
 
         StartCoroutine(FadeAndLoadScene(sceneName));
     }
 
     private IEnumerator FadeAndLoadScene(string sceneName)
     {
-        // 1. Затемнение
+        if (string.IsNullOrEmpty(sceneName))
+        {
+            isSceneLoadInProgress = false;
+            yield break;
+        }
+
+        isSceneLoadInProgress = true;
+
+        while (isFading)
+        {
+            yield return null;
+        }
+
+        if (fadeImage == null)
+        {
+            isSceneLoadInProgress = false;
+            UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
+            yield break;
+        }
+
         yield return StartCoroutine(FadeOut());
 
-        // 2. Загрузка сцены
         UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
-
-        // 3. Осветление произойдет автоматически в Start() новой сцены
     }
 
-    // Статический метод для легкого доступа
     public static void FadeToScene(string sceneName)
     {
         var fader = FindObjectOfType<SceneFader>();
@@ -107,8 +131,22 @@ public class SceneFader : MonoBehaviour
         }
         else
         {
-            // Если фейдера нет - просто грузим сцену
             UnityEngine.SceneManagement.SceneManager.LoadScene(sceneName);
         }
+    }
+
+    private void SetInputBlocker(bool shouldBlock)
+    {
+        if (fadeImage != null)
+        {
+            fadeImage.raycastTarget = shouldBlock;
+        }
+    }
+
+    private void OnDisable()
+    {
+        isFading = false;
+        isSceneLoadInProgress = false;
+        SetInputBlocker(false);
     }
 }

@@ -3,26 +3,23 @@ using UnityEngine.SceneManagement;
 
 public class DataCoordinator : MonoBehaviour
 {
-
     public static DataCoordinator Instance { get; private set; }
 
     [Header("Ссылки")]
     [SerializeField] private ItemDatabaseSO itemDatabase;
     [SerializeField] private PlayerDataSO playerSettings;
-    
+
     [Header("Настройки")]
     [SerializeField] private bool autoSaveOnSceneChange = true;
-    
+
     private SaveManager saveManager;
     private InventoryManager inventoryManager;
     private ProgressManager progressManager;
-    
-    // Данные для спавна
+
     private string targetSpawnId = "";
-    
-    // События
+
     public event System.Action OnPlayerDiedData;
-    
+
     private GameData currentGame = new GameData();
 
     public GameData CurrentGame => currentGame;
@@ -33,49 +30,60 @@ public class DataCoordinator : MonoBehaviour
         get => currentGame.currentHealth;
         set
         {
-            currentGame.currentHealth = Mathf.Clamp(value, 0, playerSettings != null ? playerSettings.MaxHealth : 100f);
-            if (currentGame.currentHealth <= 0)
+            float maxHealth = playerSettings != null ? playerSettings.MaxHealth : 100f;
+            currentGame.currentHealth = Mathf.Clamp(value, 0f, maxHealth);
+            if (currentGame.currentHealth <= 0f)
             {
                 OnPlayerDiedData?.Invoke();
             }
         }
     }
 
-    void Awake()
+    private void Awake()
     {
-        Debug.Log($"=== ManagerDebugger: объект {gameObject.name} проснулся на сцене {gameObject.scene.name} ===");
-        //Debug.Log($"DataCoordinator.Awake: currentGame.currentHealth = {currentGame.currentHealth}");
+        if (!TryInitializeSingleton())
+        {
+            return;
+        }
+
+        SceneManager.sceneLoaded += OnSceneLoaded;
+        InitializeManagers();
+    }
+
+    private bool TryInitializeSingleton()
+    {
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
-            return;
+            return false;
         }
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        SceneManager.sceneLoaded += OnSceneLoaded;
-
-        InitializeManagers();
+        return true;
     }
 
-    void InitializeManagers()
+    private void InitializeManagers()
     {
-        saveManager = GetComponent<SaveManager>();
-        if (saveManager == null) saveManager = gameObject.AddComponent<SaveManager>();
-        
-        inventoryManager = GetComponent<InventoryManager>();
-        if (inventoryManager == null) inventoryManager = gameObject.AddComponent<InventoryManager>();
-        
-        progressManager = GetComponent<ProgressManager>();
-        if (progressManager == null) progressManager = gameObject.AddComponent<ProgressManager>();
+        saveManager = GetOrAddManager<SaveManager>();
+        inventoryManager = GetOrAddManager<InventoryManager>();
+        progressManager = GetOrAddManager<ProgressManager>();
     }
 
-    // ===== УПРАВЛЕНИЕ СПАВНАМИ =====
+    private T GetOrAddManager<T>() where T : Component
+    {
+        var manager = GetComponent<T>();
+        if (manager == null)
+        {
+            manager = gameObject.AddComponent<T>();
+        }
+
+        return manager;
+    }
 
     public void SetTargetSpawn(string spawnId)
     {
         targetSpawnId = spawnId;
-        //Debug.Log($"DataCoordinator: установлен целевой спавн {spawnId}");
     }
 
     public void ClearTargetSpawn()
@@ -83,22 +91,11 @@ public class DataCoordinator : MonoBehaviour
         targetSpawnId = "";
     }
 
-    // ===== ОБРАБОТКА ЗАГРУЗКИ СЦЕНЫ =====
-
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        //Debug.Log($"DataCoordinator: сцена загружена - {scene.name}");
-        
-        // Обновляем текущую сцену в данных
         currentGame.currentScene = scene.name;
-        
-        // Применяем данные к системам
         ApplyGameToAllSystems();
-        
-     
     }
-
-    // ===== СОХРАНЕНИЕ/ЗАГРУЗКА =====
 
     public void CreateNewGame()
     {
@@ -107,37 +104,50 @@ public class DataCoordinator : MonoBehaviour
         Debug.Log("Новая игра создана");
     }
 
+    public void ResetLevelProgressForRespawn()
+    {
+        string activeSceneName = SceneManager.GetActiveScene().name;
+
+        currentGame.ResetToDefault();
+        currentGame.currentScene = activeSceneName;
+        targetSpawnId = "";
+
+        if (playerSettings != null)
+        {
+            currentGame.currentHealth = playerSettings.MaxHealth;
+        }
+
+        ApplyGameToAllSystems();
+    }
+
     public void SaveGame()
     {
+        if (saveManager == null)
+        {
+            return;
+        }
+
         CollectCurrentState();
         saveManager.SaveToFile(currentGame);
-        Debug.Log($"Игра сохранена. Здоровье: {currentGame.currentHealth}");
     }
 
     public void LoadGame()
     {
-        var loaded = saveManager.LoadFromFile();
-        if (loaded != null)
-        {
-            currentGame = loaded;
-            
-            if (!string.IsNullOrEmpty(currentGame.currentScene))
-            {
-                // Используем SceneLoader для загрузки сцены
-                if (SceneLoader.Instance != null)
-                {
-                    SceneLoader.Instance.LoadScene(currentGame.currentScene, true);
-                }
-                else
-                {
-                    SceneManager.LoadScene(currentGame.currentScene);
-                }
-            }
-        }
-        else
+        if (saveManager == null)
         {
             CreateNewGame();
+            return;
         }
+
+        GameData loaded = saveManager.LoadFromFile();
+        if (loaded == null)
+        {
+            CreateNewGame();
+            return;
+        }
+
+        currentGame = loaded;
+        TryLoadSceneFromData();
     }
 
     private void CollectCurrentState()
@@ -146,7 +156,7 @@ public class DataCoordinator : MonoBehaviour
         {
             currentGame.playerPosition = Player1.Instance.transform.position;
             currentGame.playerLastDirection = Player1.Instance.LastMovementDirection;
-            
+
             var playerHealth = Player1.Instance.GetComponent<PlayerHealth>();
             if (playerHealth != null)
             {
@@ -163,14 +173,30 @@ public class DataCoordinator : MonoBehaviour
     {
         inventoryManager?.LoadFromGameData(currentGame, itemDatabase);
         progressManager?.LoadFromGameData(currentGame);
-        
-        // Здоровье применится в PlayerHealth.Start()
     }
 
-    void OnDestroy()
+    private void TryLoadSceneFromData()
     {
-        Debug.LogError($"!!! ОБЪЕКТ {gameObject.name} УНИЧТОЖАЕТСЯ !!!");
-        Debug.LogError($"Стек вызовов: {StackTraceUtility.ExtractStackTrace()}");
-        SceneManager.sceneLoaded -= OnSceneLoaded;
+        if (string.IsNullOrEmpty(currentGame.currentScene))
+        {
+            return;
+        }
+
+        if (SceneLoader.Instance != null)
+        {
+            SceneLoader.Instance.LoadScene(currentGame.currentScene, true);
+            return;
+        }
+
+        SceneManager.LoadScene(currentGame.currentScene);
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            Instance = null;
+        }
     }
 }

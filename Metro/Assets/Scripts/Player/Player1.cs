@@ -17,12 +17,11 @@ public class Player1 : MonoBehaviour
 
     [Header("Состояния")]
     private Vector2 lastMovementDirection = Vector2.down;
-    private bool isMoving = false;
-    private bool isRunning = false;
-    private bool isSprinting = false;
+    private bool isMoving;
+    private bool isRunning;
+    private bool isSprinting;
     private float minMovingThreshold = 0.1f;
 
-    // Свойства
     public Vector2 LastMovementDirection => lastMovementDirection;
     public bool IsMoving => isMoving;
     public bool IsRunning => isRunning;
@@ -31,33 +30,42 @@ public class Player1 : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (!TryInitializeSingleton())
         {
-            Destroy(gameObject);
             return;
         }
-
-        Instance = this;
-        
 
         rb = GetComponent<Rigidbody2D>();
         flashlight = GetComponentInChildren<Flashlight>();
 
         InitializeFromData();
-        Debug.Log("Player1 инициализирован (новая система)");
+    }
+
+    private bool TryInitializeSingleton()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return false;
+        }
+
+        Instance = this;
+        return true;
     }
 
     private void InitializeFromData()
     {
-        if (playerData != null)
+        if (playerData == null)
         {
-            baseMoveSpeed = playerData.MoveSpeed;
-            sprintMultiplier = playerData.SprintMultiplier;
+            return;
+        }
 
-            if (flashlight != null)
-            {
-                flashlight.gameObject.SetActive(playerData.HasFlashlight);
-            }
+        baseMoveSpeed = playerData.MoveSpeed;
+        sprintMultiplier = playerData.SprintMultiplier;
+
+        if (flashlight != null)
+        {
+            flashlight.gameObject.SetActive(playerData.HasFlashlight);
         }
     }
 
@@ -68,41 +76,39 @@ public class Player1 : MonoBehaviour
 
     private void HandleMovement()
     {
-        if (GameInput.Instance == null) return;
-
-        Vector2 inputVector = GameInput.Instance.GetMovement();
-        isMoving = inputVector.magnitude > minMovingThreshold;
-        isRunning = isMoving;
-        isSprinting = GameInput.Instance.IsSprintPressed();
-
-        if (isMoving)
+        if (GameInput.Instance == null || rb == null)
         {
-            lastMovementDirection = inputVector.normalized;
+            return;
         }
 
-        float currentSpeed = baseMoveSpeed;
-        if (isSprinting)
+        Vector2 input = GameInput.Instance.GetMovement();
+        bool movingNow = input.magnitude > minMovingThreshold;
+
+        isMoving = movingNow;
+        isRunning = movingNow;
+        isSprinting = movingNow && GameInput.Instance.IsSprintPressed();
+
+        if (movingNow)
         {
-            currentSpeed *= sprintMultiplier;
+            lastMovementDirection = input.normalized;
         }
 
-        if (rb != null)
-        {
-            rb.MovePosition(rb.position + inputVector * (currentSpeed * Time.fixedDeltaTime));
-        }
+        float currentSpeed = isSprinting ? baseMoveSpeed * sprintMultiplier : baseMoveSpeed;
+        rb.MovePosition(rb.position + input * (currentSpeed * Time.fixedDeltaTime));
     }
 
-    // Фонарик
     public void SetFlashlight(Flashlight newFlashlight)
     {
         flashlight = newFlashlight;
-        if (playerData != null) playerData.HasFlashlight = true;
+        if (playerData != null)
+        {
+            playerData.HasFlashlight = true;
+        }
     }
 
     public Flashlight GetFlashlight() => flashlight;
     public bool HasFlashlight() => playerData?.HasFlashlight ?? false;
 
-    // Утилиты
     public bool IsMovingUp() => lastMovementDirection.y > 0.5f;
     public bool IsMovingDown() => lastMovementDirection.y < -0.5f;
     public bool IsMovingLeft() => lastMovementDirection.x < -0.5f;
@@ -111,28 +117,41 @@ public class Player1 : MonoBehaviour
 
     public Vector3 GetPlayerScreenPosition()
     {
-        return Camera.main != null ?
-            Camera.main.WorldToScreenPoint(transform.position) :
-            transform.position;
+        if (Camera.main == null)
+        {
+            return transform.position;
+        }
+
+        return Camera.main.WorldToScreenPoint(transform.position);
     }
 
-
-    // Чекпоинты
     public void SaveCheckpoint(string sceneName)
     {
-        if (playerData != null)
+        if (playerData == null)
         {
-            playerData.LastCheckpointPosition = transform.position;
-            playerData.LastCheckpointScene = sceneName;
+            return;
         }
+
+        playerData.LastCheckpointPosition = transform.position;
+        playerData.LastCheckpointScene = sceneName;
     }
 
     public void LoadCheckpoint()
     {
-        if (playerData != null && playerData.LastCheckpointPosition != Vector2.zero)
+        if (playerData == null || playerData.LastCheckpointPosition == Vector2.zero)
         {
-            transform.position = playerData.LastCheckpointPosition;
-            playerData.RestoreFullHealth();
+            return;
+        }
+
+        transform.position = playerData.LastCheckpointPosition;
+        playerData.RestoreFullHealth();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+        {
+            Instance = null;
         }
     }
 }

@@ -1,6 +1,6 @@
-п»їusing UnityEngine;
-using UnityEngine.UI;
 using System.Collections;
+using UnityEngine;
+using UnityEngine.UI;
 
 public class DoorTeleport : MonoBehaviour, IInteractable
 {
@@ -13,12 +13,10 @@ public class DoorTeleport : MonoBehaviour, IInteractable
     [Header("UI Reference")]
     [SerializeField] private Image fadePanel;
 
-    
-
     [Header("Key Requirements")]
     [SerializeField] private bool requireKey = false;
     [SerializeField] private ItemDataSO requiredKey;
-    [SerializeField] private string lockedMessage = "РўСЂРµР±СѓРµС‚СЃСЏ РєР»СЋС‡!";
+    [SerializeField] private string lockedMessage = "Требуется ключ!";
 
     [Header("Door Settings")]
     [SerializeField] private float doorCooldown = 1.5f;
@@ -28,45 +26,38 @@ public class DoorTeleport : MonoBehaviour, IInteractable
     [SerializeField] private ParticleSystem teleportParticles;
     [SerializeField] private AudioClip teleportSound;
 
+    private enum DoorState
+    {
+        Ready,
+        Teleporting,
+        OnCooldown
+    }
 
-
-    private enum DoorState { Ready, Teleporting, OnCooldown }
     private DoorState currentState = DoorState.Ready;
 
-    private bool isExternallyLocked = false;
-    private float lastTeleportTime = 0f;
+    private bool isExternallyLocked;
+    private float lastTeleportTime;
     private Player1 player;
     private Collider2D doorCollider;
     private Coroutine activeTeleportCoroutine;
 
-    void Start()
+    private void Start()
     {
         player = Player1.Instance;
         doorCollider = GetComponent<Collider2D>();
 
-
-
-        if (TeleportManager.Instance != null)
-        {
-            TeleportManager.Instance.RegisterDoor(this);
-            Log($"Р—Р°СЂРµРіРёСЃС‚СЂРёСЂРѕРІР°РЅР° РІ TeleportManager");
-        }
-
-        
-
+        RegisterInTeleportManager();
         InitializeFadePanel();
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
-        if (TeleportManager.Instance != null)
-        {
-            TeleportManager.Instance.UnregisterDoor(this);
-        }
+        UnregisterFromTeleportManager();
 
         if (activeTeleportCoroutine != null)
         {
             StopCoroutine(activeTeleportCoroutine);
+            activeTeleportCoroutine = null;
         }
     }
 
@@ -74,7 +65,7 @@ public class DoorTeleport : MonoBehaviour, IInteractable
     {
         if (!CanInteract())
         {
-            Log("Р’Р·Р°РёРјРѕРґРµР№СЃС‚РІРёРµ РѕС‚РєР»РѕРЅРµРЅРѕ");
+            Log("Взаимодействие отклонено");
             return;
         }
 
@@ -85,84 +76,80 @@ public class DoorTeleport : MonoBehaviour, IInteractable
     {
         if (isExternallyLocked)
         {
-            Log("Р—Р°Р±Р»РѕРєРёСЂРѕРІР°РЅР° TeleportManager");
+            Log("Заблокирована TeleportManager");
             return false;
         }
 
         if (currentState != DoorState.Ready)
         {
-            Log($"РќРµ РіРѕС‚РѕРІРѕ. РЎРѕСЃС‚РѕСЏРЅРёРµ: {currentState}");
+            Log($"Не готово. Состояние: {currentState}");
             return false;
         }
 
         if (TeleportManager.Instance != null && !TeleportManager.Instance.CanStartTeleport())
         {
-            Log("Р“Р»РѕР±Р°Р»СЊРЅР°СЏ Р±Р»РѕРєРёСЂРѕРІРєР° TeleportManager");
+            Log("Глобальная блокировка TeleportManager");
             return false;
         }
 
-
-
         if (player == null)
         {
-            Log("РРіСЂРѕРє РЅРµ РЅР°Р№РґРµРЅ");
+            Log("Игрок не найден");
             return false;
         }
 
         if (targetPosition == null)
         {
-            LogError("Target Position РЅРµ РЅР°Р·РЅР°С‡РµРЅ!");
+            LogError("Target Position не назначен!");
             return false;
         }
 
         return true;
     }
 
-    // РћР‘РќРћР’Р›Р•РќРќР«Р™ РњР•РўРћР” Р”Р›РЇ РџР РћР’Р•Р РљР РљР›Р®Р§Рђ
-
-
     private void StartTeleportProcess()
     {
-        Log($"=== РќРђР§РђР›Рћ РўР•Р›Р•РџРћР РўРђР¦РР {name} ===");
+        Log($"=== НАЧАЛО ТЕЛЕПОРТАЦИИ {name} ===");
 
         currentState = DoorState.Teleporting;
         lastTeleportTime = Time.time;
 
         if (doorCollider != null)
+        {
             doorCollider.enabled = false;
+        }
 
         if (TeleportManager.Instance != null)
+        {
             TeleportManager.Instance.StartGlobalTeleport(this);
+        }
 
         if (activeTeleportCoroutine != null)
+        {
             StopCoroutine(activeTeleportCoroutine);
+        }
 
         activeTeleportCoroutine = StartCoroutine(TeleportSequence());
     }
 
     private IEnumerator TeleportSequence()
     {
-        Log("[1] РќР°С‡Р°Р»Рѕ РїРѕСЃР»РµРґРѕРІР°С‚РµР»СЊРЅРѕСЃС‚Рё С‚РµР»РµРїРѕСЂС‚Р°С†РёРё");
+        Log("[1] Начало последовательности телепортации");
 
-        // 1. Р—Р°С‚РµРјРЅРµРЅРёРµ
         yield return StartCoroutine(PerformFade(0f, 1f, fadeInDuration));
 
         if (currentState != DoorState.Teleporting)
         {
-            Log("РџСЂРµСЂРІР°РЅРѕ РїРѕСЃР»Рµ Р·Р°С‚РµРјРЅРµРЅРёСЏ");
+            Log("Прервано после затемнения");
             yield break;
         }
 
-        // 2. РўРµР»РµРїРѕСЂС‚Р°С†РёСЏ
         PerformTeleport();
 
-        // 3. РџР°СѓР·Р°
         yield return new WaitForSeconds(cameraCatchUpTime);
 
-        // 4. РћСЃРІРµС‚Р»РµРЅРёРµ
         yield return StartCoroutine(PerformFade(1f, 0f, fadeOutDuration));
 
-        // 5. Р—Р°РІРµСЂС€РµРЅРёРµ
         CompleteTeleport();
     }
 
@@ -170,11 +157,11 @@ public class DoorTeleport : MonoBehaviour, IInteractable
     {
         if (fadePanel == null)
         {
-            LogError("Fade Panel РЅРµ РЅР°Р·РЅР°С‡РµРЅ!");
+            LogError("Fade Panel не назначен!");
             yield break;
         }
 
-        fadePanel.color = new Color(0, 0, 0, fromAlpha);
+        fadePanel.color = new Color(0f, 0f, 0f, fromAlpha);
         fadePanel.gameObject.SetActive(true);
 
         float elapsed = 0f;
@@ -182,20 +169,25 @@ public class DoorTeleport : MonoBehaviour, IInteractable
         {
             elapsed += Time.deltaTime;
             float alpha = Mathf.Lerp(fromAlpha, toAlpha, elapsed / duration);
-            fadePanel.color = new Color(0, 0, 0, alpha);
+            fadePanel.color = new Color(0f, 0f, 0f, alpha);
             yield return null;
         }
 
-        fadePanel.color = new Color(0, 0, 0, toAlpha);
-        if (toAlpha == 0f)
+        fadePanel.color = new Color(0f, 0f, 0f, toAlpha);
+        if (Mathf.Approximately(toAlpha, 0f))
+        {
             fadePanel.gameObject.SetActive(false);
+        }
 
-        Log($"Fade Р·Р°РІРµСЂС€С‘РЅ: {fromAlpha} в†’ {toAlpha}");
+        Log($"Fade завершён: {fromAlpha} -> {toAlpha}");
     }
 
     private void PerformTeleport()
     {
-        if (player == null || targetPosition == null) return;
+        if (player == null || targetPosition == null)
+        {
+            return;
+        }
 
         bool playerWasEnabled = player.enabled;
         player.enabled = false;
@@ -203,50 +195,42 @@ public class DoorTeleport : MonoBehaviour, IInteractable
         Vector3 oldPosition = player.transform.position;
         PlayTeleportEffects(oldPosition);
 
-        // РўРµР»РµРїРѕСЂС‚Р°С†РёСЏ РёРіСЂРѕРєР°
         player.transform.position = targetPosition.position;
-        Log($"РРіСЂРѕРє С‚РµР»РµРїРѕСЂС‚РёСЂРѕРІР°РЅ: {oldPosition} в†’ {targetPosition.position}");
-
-        // РўРµР»РµРїРѕСЂС‚Р°С†РёСЏ РєР°РјРµСЂС‹
-        
-
-
-
-
+        Log($"Игрок телепортирован: {oldPosition} -> {targetPosition.position}");
 
         player.enabled = playerWasEnabled;
     }
-
-
-
-    
 
     private void PlayTeleportEffects(Vector3 position)
     {
         if (teleportParticles != null)
         {
             teleportParticles.Play();
-            Log("Р—Р°РїСѓС‰РµРЅС‹ С‡Р°СЃС‚РёС†С‹ С‚РµР»РµРїРѕСЂС‚Р°С†РёРё");
+            Log("Запущены частицы телепортации");
         }
 
         if (teleportSound != null)
         {
             AudioSource.PlayClipAtPoint(teleportSound, position);
-            Log("РџСЂРѕРёРіСЂР°РЅ Р·РІСѓРє С‚РµР»РµРїРѕСЂС‚Р°С†РёРё");
+            Log("Проигран звук телепортации");
         }
     }
 
     private void CompleteTeleport()
     {
-        Log($"=== РўР•Р›Р•РџРћР РўРђР¦РРЇ {name} РЈРЎРџР•РЁРќРћ Р—РђР’Р•Р РЁР•РќРђ ===");
+        Log($"=== ТЕЛЕПОРТАЦИЯ {name} УСПЕШНО ЗАВЕРШЕНА ===");
 
         if (doorCollider != null)
+        {
             doorCollider.enabled = true;
+        }
 
         currentState = DoorState.OnCooldown;
 
         if (TeleportManager.Instance != null)
+        {
             TeleportManager.Instance.EndGlobalTeleport(this);
+        }
 
         StartCoroutine(CooldownTimer());
     }
@@ -254,48 +238,65 @@ public class DoorTeleport : MonoBehaviour, IInteractable
     private IEnumerator CooldownTimer()
     {
         float cooldownEndTime = Time.time + doorCooldown;
-        while (Time.time < cooldownEndTime) yield return null;
+        while (Time.time < cooldownEndTime)
+        {
+            yield return null;
+        }
+
         currentState = DoorState.Ready;
-        Log("РљСѓР»РґР°СѓРЅ Р·Р°РІРµСЂС€С‘РЅ, РґРІРµСЂСЊ РіРѕС‚РѕРІР° Рє РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЋ");
+        Log("Кулдаун завершён, дверь готова к использованию");
     }
 
     public void SetExternalLock(bool locked)
     {
         isExternallyLocked = locked;
-        Log(locked ? "Р’РЅРµС€РЅРµ Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅР°" : "Р’РЅРµС€РЅРѕ СЂР°Р·Р±Р»РѕРєРёСЂРѕРІР°РЅР°");
+        Log(locked ? "Внешне заблокирована" : "Внешно разблокирована");
     }
 
     private void InitializeFadePanel()
     {
-        if (fadePanel != null)
+        if (fadePanel == null)
         {
-            fadePanel.color = Color.clear;
-            fadePanel.gameObject.SetActive(false);
-            Log("Fade panel РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅ");
+            LogError("Fade Panel не назначен! Создай UI Image на Canvas.");
+            return;
         }
-        else
+
+        fadePanel.color = Color.clear;
+        fadePanel.gameObject.SetActive(false);
+        Log("Fade panel инициализирован");
+    }
+
+    private void RegisterInTeleportManager()
+    {
+        if (TeleportManager.Instance != null)
         {
-            LogError("Fade Panel РЅРµ РЅР°Р·РЅР°С‡РµРЅ! РЎРѕР·РґР°Р№ UI Image РЅР° Canvas.");
+            TeleportManager.Instance.RegisterDoor(this);
+            Log("Зарегистрирована в TeleportManager");
+        }
+    }
+
+    private void UnregisterFromTeleportManager()
+    {
+        if (TeleportManager.Instance != null)
+        {
+            TeleportManager.Instance.UnregisterDoor(this);
         }
     }
 
     private void Log(string message)
     {
         if (debugLogs)
-            Debug.Log($"[Р”РІРµСЂСЊ {name}] {message}");
-    }
-
-    private void LogWarning(string message)
-    {
-        Debug.LogWarning($"[Р”РІРµСЂСЊ {name}] {message}");
+        {
+            Debug.Log($"[Дверь {name}] {message}");
+        }
     }
 
     private void LogError(string message)
     {
-        Debug.LogError($"[Р”РІРµСЂСЊ {name}] {message}");
+        Debug.LogError($"[Дверь {name}] {message}");
     }
 
-    void OnDisable()
+    private void OnDisable()
     {
         ForceReset();
     }
@@ -315,30 +316,39 @@ public class DoorTeleport : MonoBehaviour, IInteractable
         }
 
         if (doorCollider != null)
+        {
             doorCollider.enabled = true;
+        }
 
         currentState = DoorState.Ready;
 
         if (TeleportManager.Instance != null)
+        {
             TeleportManager.Instance.EndGlobalTeleport(this);
+        }
     }
 
-    void OnGUI()
+    private void OnGUI()
     {
-        if (Debug.isDebugBuild && debugLogs)
+        if (!Debug.isDebugBuild || !debugLogs)
         {
-            string stateText = currentState.ToString();
-            if (isExternallyLocked) stateText += " (LOCKED)";
+            return;
+        }
 
-            GUI.Label(new Rect(10, 190, 400, 30), $"рџљЄ {name}: {stateText}");
+        string stateText = currentState.ToString();
+        if (isExternallyLocked)
+        {
+            stateText += " (LOCKED)";
+        }
 
-            if (currentState == DoorState.OnCooldown)
+        GUI.Label(new Rect(10, 190, 400, 30), $"?? {name}: {stateText}");
+
+        if (currentState == DoorState.OnCooldown)
+        {
+            float timeLeft = doorCooldown - (Time.time - lastTeleportTime);
+            if (timeLeft > 0f)
             {
-                float timeLeft = doorCooldown - (Time.time - lastTeleportTime);
-                if (timeLeft > 0)
-                {
-                    GUI.Label(new Rect(10, 220, 400, 30), $"вЏ±пёЏ РљСѓР»РґР°СѓРЅ: {timeLeft:F1}СЃ");
-                }
+                GUI.Label(new Rect(10, 220, 400, 30), $"?? Кулдаун: {timeLeft:F1}с");
             }
         }
     }

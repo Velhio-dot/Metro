@@ -1,36 +1,45 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class GameInput : MonoBehaviour
 {
+    private const float InputThreshold = 0.1f;
+
     public static GameInput Instance { get; private set; }
+
     private PlayerInputActions playerInputActions;
 
-    // Для обнаружения нажатия (не зажатия)
-    private bool interactWasPressed = false;
-    private bool flashlightWasPressed = false;
-    private bool saveWasPressed = false;
-    private bool loadWasPressed = false;
+    private bool interactWasPressed;
+    private bool flashlightWasPressed;
+    private bool saveWasPressed;
+    private bool loadWasPressed;
 
-    // События для UI уведомлений
     public event System.Action OnSavePressed;
     public event System.Action OnLoadPressed;
     public event System.Action OnNewGamePressed;
 
     private void Awake()
     {
-        if (Instance != null)
+        if (!TryInitializeSingleton())
         {
-            Debug.LogError("More than one GameInput instance in scene!");
-            Destroy(gameObject);
             return;
         }
-        Instance = this;
 
         playerInputActions = new PlayerInputActions();
         playerInputActions.Enable();
+    }
 
-        Debug.Log("GameInput initialized with save/load hotkeys");
+    private bool TryInitializeSingleton()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning($"Duplicate GameInput on '{gameObject.name}', keeping '{Instance.gameObject.name}'.");
+            Destroy(this);
+            return false;
+        }
+
+        Instance = this;
+        return true;
     }
 
     private void Update()
@@ -40,164 +49,92 @@ public class GameInput : MonoBehaviour
 
     private void CheckSaveLoadInputs()
     {
-        // === СОХРАНЕНИЕ (F5) ===
-        float saveValue = playerInputActions.Player.Save.ReadValue<float>();
-        bool savePressedNow = saveValue > 0.1f;
-
-        if (savePressedNow && !saveWasPressed)
+        if (ConsumeButtonPress(playerInputActions.Player.Save.ReadValue<float>(), ref saveWasPressed))
         {
-            saveWasPressed = true;
             OnSaveKeyPressed();
         }
 
-        if (!savePressedNow)
+        if (ConsumeButtonPress(playerInputActions.Player.Load.ReadValue<float>(), ref loadWasPressed))
         {
-            saveWasPressed = false;
-        }
-
-        // === ЗАГРУЗКА (F9) ===
-        float loadValue = playerInputActions.Player.Load.ReadValue<float>();
-        bool loadPressedNow = loadValue > 0.1f;
-
-        if (loadPressedNow && !loadWasPressed)
-        {
-            loadWasPressed = true;
             OnLoadKeyPressed();
         }
+    }
 
-        if (!loadPressedNow)
+    private static bool ConsumeButtonPress(float inputValue, ref bool wasPressed)
+    {
+        bool pressedNow = inputValue > InputThreshold;
+
+        if (pressedNow && !wasPressed)
         {
-            loadWasPressed = false;
+            wasPressed = true;
+            return true;
         }
+
+        if (!pressedNow)
+        {
+            wasPressed = false;
+        }
+
+        return false;
     }
 
     private void OnSaveKeyPressed()
     {
-        Debug.Log("💾 Save key pressed (Input System)");
-
-        if (DataCoordinator.Instance != null)
-        {
-            DataCoordinator.Instance.SaveGame();
-        }
-
+        DataCoordinator.Instance?.SaveGame();
         OnSavePressed?.Invoke();
     }
 
     private void OnLoadKeyPressed()
     {
-        Debug.Log("🔄 Load key pressed (Input System)");
-
-        if (DataCoordinator.Instance != null)
-        {
-            DataCoordinator.Instance.LoadGame();
-        }
-
+        DataCoordinator.Instance?.LoadGame();
         OnLoadPressed?.Invoke();
     }
 
-    // ===== ОРИГИНАЛЬНЫЕ МЕТОДЫ (сохраняем) =====
-
     public Vector2 GetMovement()
     {
-        Vector2 inputVector = playerInputActions.Player.Move.ReadValue<Vector2>();
-        return inputVector;
+        return playerInputActions.Player.Move.ReadValue<Vector2>();
     }
 
     public Vector3 GetMousePosition()
     {
-        Vector3 mousePos = Mouse.current.position.ReadValue();
-        return mousePos;
+        if (Mouse.current == null)
+        {
+            return Vector3.zero;
+        }
+
+        return Mouse.current.position.ReadValue();
     }
 
     public bool IsSprintPressed()
     {
-        return playerInputActions.Player.Sprint.ReadValue<float>() > 0.1f;
+        return playerInputActions.Player.Sprint.ReadValue<float>() > InputThreshold;
     }
 
     public bool IsInteractPressed()
     {
-        float currentValue = playerInputActions.Player.Interact.ReadValue<float>();
-        bool isPressedNow = currentValue > 0.1f;
-
-        if (isPressedNow && !interactWasPressed)
-        {
-            interactWasPressed = true;
-            return true;
-        }
-
-        if (!isPressedNow)
-        {
-            interactWasPressed = false;
-        }
-
-        return false;
+        return ConsumeButtonPress(playerInputActions.Player.Interact.ReadValue<float>(), ref interactWasPressed);
     }
 
     public bool IsInteractHeld()
     {
-        return playerInputActions.Player.Interact.ReadValue<float>() > 0.1f;
+        return playerInputActions.Player.Interact.ReadValue<float>() > InputThreshold;
     }
 
     public bool IsFlashlightToggled()
     {
-        float currentValue = playerInputActions.Player.Flashlight.ReadValue<float>();
-        bool isPressedNow = currentValue > 0.1f;
-
-        if (isPressedNow && !flashlightWasPressed)
-        {
-            flashlightWasPressed = true;
-            return true;
-        }
-
-        if (!isPressedNow)
-        {
-            flashlightWasPressed = false;
-        }
-
-        return false;
+        return ConsumeButtonPress(playerInputActions.Player.Flashlight.ReadValue<float>(), ref flashlightWasPressed);
     }
-
-    // ===== НОВЫЕ МЕТОДЫ ДЛЯ СОХРАНЕНИЯ =====
 
     public bool IsSavePressed()
     {
-        float currentValue = playerInputActions.Player.Save.ReadValue<float>();
-        bool isPressedNow = currentValue > 0.1f;
-
-        if (isPressedNow && !saveWasPressed)
-        {
-            saveWasPressed = true;
-            return true;
-        }
-
-        if (!isPressedNow)
-        {
-            saveWasPressed = false;
-        }
-
-        return false;
+        return ConsumeButtonPress(playerInputActions.Player.Save.ReadValue<float>(), ref saveWasPressed);
     }
 
     public bool IsLoadPressed()
     {
-        float currentValue = playerInputActions.Player.Load.ReadValue<float>();
-        bool isPressedNow = currentValue > 0.1f;
-
-        if (isPressedNow && !loadWasPressed)
-        {
-            loadWasPressed = true;
-            return true;
-        }
-
-        if (!isPressedNow)
-        {
-            loadWasPressed = false;
-        }
-
-        return false;
+        return ConsumeButtonPress(playerInputActions.Player.Load.ReadValue<float>(), ref loadWasPressed);
     }
 
-    // Метод для принудительного сохранения/загрузки из кода
     public void TriggerSave()
     {
         OnSaveKeyPressed();
@@ -214,6 +151,7 @@ public class GameInput : MonoBehaviour
         {
             playerInputActions.Disable();
             playerInputActions.Dispose();
+            playerInputActions = null;
         }
 
         if (Instance == this)
@@ -222,7 +160,6 @@ public class GameInput : MonoBehaviour
         }
     }
 
-    // Метод для отладки
     public string GetInputStatus()
     {
         float interactValue = playerInputActions.Player.Interact.ReadValue<float>();

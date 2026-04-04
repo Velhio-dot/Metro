@@ -15,9 +15,8 @@ public class PlayerHealth : MonoBehaviour
     public float Health => currentHealth;
     public bool IsDead => isDead;
 
-    void Start()
+    private void Start()
     {
-        // Загружаем здоровье из DataCoordinator
         if (DataCoordinator.Instance != null)
         {
             currentHealth = DataCoordinator.Instance.PlayerHealth;
@@ -29,7 +28,6 @@ public class PlayerHealth : MonoBehaviour
             Debug.LogWarning("PlayerHealth: DataCoordinator не найден, используется maxHealth");
         }
 
-        // Автоматически находим PlayerVisual если не назначен
         if (playerVisual == null)
         {
             playerVisual = GetComponentInChildren<PlayerVisual>();
@@ -37,23 +35,21 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-
-
     public void TakeDamage(float damage)
     {
-        if (isDead || damage <= 0) return;
+        if (isDead || damage <= 0f)
+        {
+            return;
+        }
 
         currentHealth -= damage;
-        currentHealth = Mathf.Max(0, currentHealth);
+        currentHealth = Mathf.Max(0f, currentHealth);
 
-        // Обновляем в DataCoordinator
         SaveToCoordinator();
-
 
         Debug.Log($"Player получил урон: {damage}, здоровье: {currentHealth}");
 
-        // Проверяем на смерть
-        if (currentHealth <= 0 || damage >= 999f)
+        if (currentHealth <= 0f || damage >= 999f)
         {
             Die();
         }
@@ -61,22 +57,20 @@ public class PlayerHealth : MonoBehaviour
 
     public void Heal(float amount)
     {
-        if (isDead) return;
+        if (isDead)
+        {
+            return;
+        }
 
         currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
-
-        // Обновляем в DataCoordinator
-        if (DataCoordinator.Instance != null)
-        {
-            DataCoordinator.Instance.PlayerHealth = currentHealth;
-        }
+        SaveToCoordinator();
 
         Debug.Log($"Player healed. Health: {currentHealth}");
     }
 
     public void SetHealth(float health)
     {
-        currentHealth = Mathf.Clamp(health, 0, maxHealth);
+        currentHealth = Mathf.Clamp(health, 0f, maxHealth);
         SaveToCoordinator();
     }
 
@@ -88,12 +82,11 @@ public class PlayerHealth : MonoBehaviour
         Debug.Log("Player fully healed");
     }
 
-    void Die()
+    private void Die()
     {
         isDead = true;
         Debug.Log("Player died!");
 
-        // Запускаем анимацию смерти через PlayerVisual
         if (playerVisual != null)
         {
             playerVisual.PlayDeathAnimation();
@@ -103,19 +96,16 @@ public class PlayerHealth : MonoBehaviour
             Debug.LogError("PlayerHealth: PlayerVisual не найден!");
         }
 
-        // Отключаем управление
         if (TryGetComponent<Player1>(out Player1 player))
         {
             player.enabled = false;
         }
 
-        // Отключаем коллайдеры
         if (TryGetComponent<Collider2D>(out Collider2D collider))
         {
             collider.enabled = false;
         }
 
-        // Перезагружаем сцену через 3 секунды
         Invoke(nameof(ReloadScene), 3f);
     }
 
@@ -127,18 +117,21 @@ public class PlayerHealth : MonoBehaviour
         }
     }
 
-    void ReloadScene()
+    private void ReloadScene()
     {
+        if (DataCoordinator.Instance != null)
+        {
+            DataCoordinator.Instance.ResetLevelProgressForRespawn();
+        }
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
+
     public void Respawn()
     {
         isDead = false;
         RestoreFullHealth();
 
-       
-
-        // Включаем коллайдер
         if (TryGetComponent<Collider2D>(out var collider))
         {
             collider.enabled = true;
@@ -147,10 +140,3 @@ public class PlayerHealth : MonoBehaviour
         Debug.Log("Player respawned");
     }
 }
-
-
-
-
-
-
-
