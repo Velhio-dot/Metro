@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 3348828980529395990}
   - component: {fileID: 2126717918901404064}
   - component: {fileID: 648029009613434547}
-  - component: {fileID: 3625477587241777157}
   - component: {fileID: -4432456652010889523}
   m_Layer: 0
   m_Name: Bunner2
@@ -139,23 +138,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 2, y: 0.38165998}
   m_EdgeRadius: 0
---- !u!114 &3625477587241777157
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 424359279894914257}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13f4ede6c5838cc4896d3456f0c09fde, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BannerInteraction
-  bannerText: "\u0417\u0434\u0435\u0441\u044C \u043C\u043E\u0433\u043B\u0430 \u0431\u044B\u0442\u044C
-    \u0432\u0430\u0448\u0430 \u0440\u0435\u043A\u043B\u0430\u043C\u0430"
-  displayDuration: 3
-  bannerPanel: {fileID: 0}
-  bannerTextUI: {fileID: 0}
 --- !u!114 &-4432456652010889523
 MonoBehaviour:
   m_ObjectHideFlags: 0

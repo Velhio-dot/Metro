@@ -5229,11 +5229,11 @@ PrefabInstance:
     - target: {fileID: 8322947657908927447, guid: 6b059bbe66c732649b572a4e4f3c9427, type: 3}
       propertyPath: bannerPanel
       value: 
-      objectReference: {fileID: 619130022}
+      objectReference: {fileID: 0}
     - target: {fileID: 8322947657908927447, guid: 6b059bbe66c732649b572a4e4f3c9427, type: 3}
       propertyPath: bannerTextUI
       value: 
-      objectReference: {fileID: 750323027}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -8686,6 +8686,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb492b3f301aeb640956de5673d1345f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DialogueNPC
+  interactionType: 0
+  requireKeyPress: 1
+  oneTimeOnly: 0
+  autoTrigger: 0
+  autoTriggerDelay: 0
   mainDialogue: {fileID: 11400000, guid: da71bc888efecc147a3521e5b66cf10f, type: 2}
   alternativeDialogue: {fileID: 11400000, guid: 55298af140a612f40838956a8868a87f, type: 2}
   requireItem: 1
@@ -8693,31 +8698,17 @@ MonoBehaviour:
   consumeItem: 1
   speakerName: "\u041F\u0435\u0440\u0441\u043E\u043D\u0430\u0436"
   speakerPortrait: {fileID: -1803619880, guid: ba3a832c04b9be742adc7f3fb4be8ec6, type: 3}
-  autoTrigger: 0
-  requireKeyPress: 1
-  oneTimeOnly: 0
-  autoTriggerDelay: 0
   showSpeakerInAutoDialogue: 0
+  bannerText: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044F"
+  bannerDuration: 3
   interactionHint: {fileID: 0}
   showHintOnlyWhenClose: 1
-  onDialogueStart:
+  onInteractionStart:
     m_PersistentCalls:
       m_Calls: []
-  onDialogueEnd:
+  onInteractionEnd:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 2050950804}
-        m_TargetAssemblyTypeName: SimpleCutsceneTrigger, Assembly-CSharp
-        m_MethodName: Play
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!1 &572500432
 GameObject:
   m_ObjectHideFlags: 0
@@ -9262,11 +9253,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::SimpleCollectible
   itemData: {fileID: 11400000, guid: e72202f1e066a8144988b173e5c9783f, type: 2}
   amount: 1
---- !u!1 &619130022 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3358335359904941300, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
-  m_PrefabInstance: {fileID: 6263682690964921270}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &619394800
 GameObject:
   m_ObjectHideFlags: 0
@@ -9635,6 +9621,11 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!1 &676249882 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 352229060911620579, guid: 8d5919a6a076adb48a3bb055e3fe63bc, type: 3}
+  m_PrefabInstance: {fileID: 1378343093}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &713652604
 GameObject:
   m_ObjectHideFlags: 0
@@ -9746,17 +9737,6 @@ Transform:
   - {fileID: 713652606}
   m_Father: {fileID: 1865727868}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &750323027 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 8947333887010511002, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
-  m_PrefabInstance: {fileID: 6263682690964921270}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!4 &779422772 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 654767942578515276, guid: dad258c92d1dd6e4a9eda84b287108d5, type: 3}
@@ -11718,17 +11698,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &877153130 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 396775339199222519, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
-  m_PrefabInstance: {fileID: 6263682690964921270}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!1 &889818683
 GameObject:
   m_ObjectHideFlags: 0
@@ -12082,6 +12051,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb492b3f301aeb640956de5673d1345f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FixedDialogueTrigger
+  interactionType: 0
+  requireKeyPress: 0
+  oneTimeOnly: 1
+  autoTrigger: 1
+  autoTriggerDelay: 0
   mainDialogue: {fileID: 11400000, guid: 922f016ab33a1b046bf9572311c41ad7, type: 2}
   alternativeDialogue: {fileID: 0}
   requireItem: 0
@@ -12089,17 +12063,15 @@ MonoBehaviour:
   consumeItem: 0
   speakerName: "\u041F\u0435\u0440\u0441\u043E\u043D\u0430\u0436"
   speakerPortrait: {fileID: 0}
-  autoTrigger: 1
-  requireKeyPress: 0
-  oneTimeOnly: 1
-  autoTriggerDelay: 0
   showSpeakerInAutoDialogue: 0
+  bannerText: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044F"
+  bannerDuration: 3
   interactionHint: {fileID: 0}
   showHintOnlyWhenClose: 1
-  onDialogueStart:
+  onInteractionStart:
     m_PersistentCalls:
       m_Calls: []
-  onDialogueEnd:
+  onInteractionEnd:
     m_PersistentCalls:
       m_Calls: []
 --- !u!1 &969092402
@@ -15548,17 +15520,6 @@ Tilemap:
     e31: 0
     e32: 0
     e33: 1
---- !u!114 &1018019028 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6110065313297358711, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
-  m_PrefabInstance: {fileID: 6263682690964921270}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!1 &1037732756
 GameObject:
   m_ObjectHideFlags: 0
@@ -15758,11 +15719,11 @@ PrefabInstance:
     - target: {fileID: 103695938152828057, guid: a346ce27687908140b44ff0156829b80, type: 3}
       propertyPath: bannerPanel
       value: 
-      objectReference: {fileID: 619130022}
+      objectReference: {fileID: 0}
     - target: {fileID: 103695938152828057, guid: a346ce27687908140b44ff0156829b80, type: 3}
       propertyPath: bannerTextUI
       value: 
-      objectReference: {fileID: 750323027}
+      objectReference: {fileID: 0}
     - target: {fileID: 424359279894914257, guid: a346ce27687908140b44ff0156829b80, type: 3}
       propertyPath: m_Name
       value: Bunner3
@@ -16546,11 +16507,6 @@ Grid:
   m_CellGap: {x: 0, y: 0, z: 0}
   m_CellLayout: 0
   m_CellSwizzle: 0
---- !u!1 &1278302457 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6446673162912172977, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
-  m_PrefabInstance: {fileID: 6263682690964921270}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1289579303
 GameObject:
   m_ObjectHideFlags: 0
@@ -25164,6 +25120,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 2848430964453403419, guid: 8d5919a6a076adb48a3bb055e3fe63bc, type: 3}
+      propertyPath: bannerPanel
+      value: 
+      objectReference: {fileID: 676249882}
     - target: {fileID: 4734383145805187572, guid: 8d5919a6a076adb48a3bb055e3fe63bc, type: 3}
       propertyPath: m_LocalPosition.x
       value: -2.57771
@@ -27294,11 +27254,6 @@ BoxCollider2D:
   m_AutoTiling: 0
   m_Size: {x: 0.5625, y: 1.875}
   m_EdgeRadius: 0
---- !u!1 &1777440971 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 8446775189153830082, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
-  m_PrefabInstance: {fileID: 6263682690964921270}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1790010706
 GameObject:
   m_ObjectHideFlags: 0
@@ -27560,7 +27515,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2102899353}
   - {fileID: 281611295}
   - {fileID: 370965774}
   - {fileID: 2054902364}
@@ -27631,11 +27585,11 @@ PrefabInstance:
     - target: {fileID: 3625477587241777157, guid: 0d04d932a20af7c419bd4b653cbc97be, type: 3}
       propertyPath: bannerPanel
       value: 
-      objectReference: {fileID: 619130022}
+      objectReference: {fileID: 0}
     - target: {fileID: 3625477587241777157, guid: 0d04d932a20af7c419bd4b653cbc97be, type: 3}
       propertyPath: bannerTextUI
       value: 
-      objectReference: {fileID: 750323027}
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -28515,17 +28469,6 @@ MonoBehaviour:
   triggerMask:
     serializedVersion: 2
     m_Bits: 4294967295
---- !u!114 &2057160170 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 4703959628289565599, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
-  m_PrefabInstance: {fileID: 6263682690964921270}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
 --- !u!95 &2061802221 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 4255851713768990325, guid: 80c5113bc95b20347a7fa1bb63a9de41, type: 3}
@@ -29071,57 +29014,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2102899352
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2102899353}
-  - component: {fileID: 2102899354}
-  m_Layer: 0
-  m_Name: DialogueMeneger
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2102899353
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2102899352}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 13.95002, y: 4.67703, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1865727868}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2102899354
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2102899352}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: df6923da006ec194aaf01bcfa62821b1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DialogueManager
-  dialoguePanel: {fileID: 1777440971}
-  speakerNameText: {fileID: 1018019028}
-  dialogueText: {fileID: 877153130}
-  speakerPortrait: {fileID: 2057160170}
-  continuePrompt: {fileID: 1278302457}
-  textSpeed: 0.05
-  continueKey: 32
 --- !u!1 &2115428288
 GameObject:
   m_ObjectHideFlags: 0
@@ -29471,6 +29363,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb492b3f301aeb640956de5673d1345f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FixedDialogueTrigger
+  interactionType: 0
+  requireKeyPress: 1
+  oneTimeOnly: 0
+  autoTrigger: 0
+  autoTriggerDelay: 0
   mainDialogue: {fileID: 11400000, guid: f6bdef3baf8ae8d4fa942c4fdd7f8993, type: 2}
   alternativeDialogue: {fileID: 11400000, guid: eeca5b0ab92c7894dbc802fb8fe0da39, type: 2}
   requireItem: 1
@@ -29478,31 +29375,17 @@ MonoBehaviour:
   consumeItem: 1
   speakerName: "\u041F\u0435\u0440\u0441\u043E\u043D\u0430\u0436"
   speakerPortrait: {fileID: 0}
-  autoTrigger: 0
-  requireKeyPress: 1
-  oneTimeOnly: 0
-  autoTriggerDelay: 0
   showSpeakerInAutoDialogue: 0
+  bannerText: "\u0418\u043D\u0444\u043E\u0440\u043C\u0430\u0446\u0438\u044F"
+  bannerDuration: 3
   interactionHint: {fileID: 0}
   showHintOnlyWhenClose: 1
-  onDialogueStart:
+  onInteractionStart:
     m_PersistentCalls:
       m_Calls: []
-  onDialogueEnd:
+  onInteractionEnd:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 203410292}
-        m_TargetAssemblyTypeName: SimpleCutsceneTrigger, Assembly-CSharp
-        m_MethodName: Play
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
 --- !u!212 &2146110710
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -30147,7 +30030,10 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
-    m_RemovedGameObjects: []
+    m_RemovedGameObjects:
+    - {fileID: 3358335359904941300, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
+    - {fileID: 8446775189153830082, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
+    - {fileID: 330778579461201247, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bff128818f6b0ad4d87f83f34a355573, type: 3}
