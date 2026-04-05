@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class DataCoordinator : MonoBehaviour
@@ -47,7 +47,17 @@ public class DataCoordinator : MonoBehaviour
         }
 
         SceneManager.sceneLoaded += OnSceneLoaded;
+        SceneManager.activeSceneChanged += OnActiveSceneChanged; // Подписка на смену сцены
         InitializeManagers();
+    }
+
+    private void OnActiveSceneChanged(Scene oldScene, Scene newScene)
+    {
+        // ПЕРЕД тем, как новая сцена начнет работать, мы собираем данные из старой
+        if (!string.IsNullOrEmpty(oldScene.name))
+        {
+            CollectCurrentState();
+        }
     }
 
     private bool TryInitializeSingleton()
@@ -59,7 +69,7 @@ public class DataCoordinator : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad(gameObject); // : изненный цикл теперь управляется CoreManager!
         return true;
     }
 
@@ -196,6 +206,7 @@ public class DataCoordinator : MonoBehaviour
         if (Instance == this)
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            SceneManager.activeSceneChanged -= OnActiveSceneChanged; // Отписка
             Instance = null;
         }
     }

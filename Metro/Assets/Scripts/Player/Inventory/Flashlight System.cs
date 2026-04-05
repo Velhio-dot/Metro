@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Rendering.Universal;
 
 public class Flashlight : MonoBehaviour
@@ -43,12 +43,28 @@ public class Flashlight : MonoBehaviour
     {
         float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
         freeformLight.transform.rotation = Quaternion.Euler(0, 0, angle);
-        freeformLight.enabled = isActive;
+
+        // Свет работает только если фонарик разблокирован В ПРОГРЕССЕ
+        bool canUse = ProgressManager.Instance != null && ProgressManager.Instance.HasFlashlight;
+        
+        if (freeformLight.enabled != (isActive && canUse))
+        {
+            freeformLight.enabled = isActive && canUse;
+            Debug.Log($"[Flashlight] Визуальное состояние света: {freeformLight.enabled}");
+        }
     }
 
     public void ToggleFlashlight()
     {
+        if (ProgressManager.Instance != null && !ProgressManager.Instance.HasFlashlight)
+        {
+            Debug.Log("[Flashlight] Попытка включения без фонарика в инвентаре!");
+            isActive = false;
+            return;
+        }
+
         isActive = !isActive;
+        Debug.Log($"[Flashlight] Состояние изменено: {(isActive ? "ВКЛ" : "ВЫКЛ")}");
     }
 
     public bool IsEnemyInLight(Transform enemyTransform)

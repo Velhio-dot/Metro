@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 public class InventoryManager : MonoBehaviour
@@ -33,7 +33,7 @@ public class InventoryManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad(gameObject); // : изненный цикл теперь управляется CoreManager!
         return true;
     }
 
@@ -92,7 +92,7 @@ public class InventoryManager : MonoBehaviour
             playerInventory.Slots[i].quantity = sourceSlot.quantity;
         }
 
-        // Р’Р°Р¶РЅРѕ: СЃР»РѕС‚С‹ Р·Р°РїРѕР»РЅСЏСЋС‚СЃСЏ РЅР°РїСЂСЏРјСѓСЋ, РїРѕСЌС‚РѕРјСѓ РІСЂСѓС‡РЅСѓСЋ СѓРІРµРґРѕРјР»СЏРµРј UI РїРѕСЃР»Рµ Р·Р°РіСЂСѓР·РєРё.
+        // Р вЂ™Р В°Р В¶Р Р…Р С•: РЎРѓР В»Р С•РЎвЂљРЎвЂ№ Р В·Р В°Р С—Р С•Р В»Р Р…РЎРЏРЎР‹РЎвЂљРЎРѓРЎРЏ Р Р…Р В°Р С—РЎР‚РЎРЏР СРЎС“РЎР‹, Р С—Р С•РЎРЊРЎвЂљР С•Р СРЎС“ Р Р†РЎР‚РЎС“РЎвЂЎР Р…РЎС“РЎР‹ РЎС“Р Р†Р ВµР Т‘Р С•Р СР В»РЎРЏР ВµР С UI Р С—Р С•РЎРѓР В»Р Вµ Р В·Р В°Р С–РЎР‚РЎС“Р В·Р С”Р С‘.
         playerInventory.NotifyInventoryChanged();
         OnInventoryChanged?.Invoke();
     }

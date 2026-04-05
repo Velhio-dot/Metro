@@ -11,7 +11,7 @@ public class BannerManager : MonoBehaviour
     [SerializeField] private GameObject bannerPanel;
     [SerializeField] private TextMeshProUGUI bannerText;
 
-    [Header("Õ‡ÒÚÓÈÍË")]
+    [Header("–ù–∞—Å—Ç—Ä–æ–π–∫–∏")]
     [SerializeField] private float defaultDuration = 3f;
 
     public event Action OnBannerHidden;
@@ -25,27 +25,48 @@ public class BannerManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            
+            if (bannerPanel != null)
+            {
+                bannerPanel.SetActive(false);
+            }
+        }
+        else
+        {
+            Destroy(gameObject);
         }
     }
-    //    else
-    //    {
-    //        Destroy(gameObject);
-    //    }
-
-        //    if (bannerPanel != null)
-        //        bannerPanel.SetActive(false);
-        //}
 
     public void ShowBanner(string text, float duration = -1)
     {
+        Debug.Log($"[BannerManager] ShowBanner called! Text: '{text}'");
+
         if (currentBanner != null)
             StopCoroutine(currentBanner);
 
         if (duration < 0)
             duration = defaultDuration;
 
-        bannerText.text = text;
-        bannerPanel.SetActive(true);
+        if (bannerText != null)
+        {
+            bannerText.text = text;
+            Debug.Log($"[BannerManager] Text updated on bannerText.");
+        }
+        else
+        {
+            Debug.LogError("[BannerManager] FATAL ERROR: bannerText reference is NULL in the inspector!");
+        }
+            
+        if (bannerPanel != null)
+        {
+            bannerPanel.SetActive(true);
+            Debug.Log($"[BannerManager] bannerPanel activated. IsActiveInHierarchy: {bannerPanel.activeInHierarchy}");
+        }
+        else
+        {
+            Debug.LogError("[BannerManager] FATAL ERROR: bannerPanel reference is NULL in the inspector!");
+        }
+            
         isShowing = true;
 
         currentBanner = StartCoroutine(HideAfterDelay(duration));

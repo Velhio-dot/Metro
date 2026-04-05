@@ -1,125 +1,27 @@
-using System.Collections;
 using UnityEngine;
-using UnityEngine.Events;
+using System;
 
-public class InteractionTrigger : MonoBehaviour, IInteractable
+[Obsolete("РСЃРїРѕР»СЊР·СѓР№С‚Рµ BannerInteractable РёР»Рё DialogueInteractable РІРјРµСЃС‚Рѕ СЌС‚РѕРіРѕ СЃРєСЂРёРїС‚Р° РЅР° РЅРѕРІС‹С… РѕР±СЉРµРєС‚Р°С….")]
+public class InteractionTrigger : BaseInteractable
 {
-    [Header("Тип взаимодействия")]
-    [SerializeField] private InteractionType interactionType = InteractionType.Dialogue;
+    public InteractionType interactionType;
 
-    [Header("Общие настройки")]
-    [SerializeField] private bool requireKeyPress = true;
-    [SerializeField] private bool oneTimeOnly = false;
-    [SerializeField] private bool autoTrigger = false;
-    [SerializeField] private float autoTriggerDelay = 0f;
-
-    [Header("Диалог (если тип Dialogue)")]
+    [Header("Р”РёР°Р»РѕРі (РµСЃР»Рё С‚РёРї Dialogue)")]
     [SerializeField] private DialogueData mainDialogue;
     [SerializeField] private DialogueData alternativeDialogue;
     [SerializeField] private bool requireItem = false;
     [SerializeField] private ItemDataSO requiredItem;
     [SerializeField] private bool consumeItem = false;
-    [SerializeField] private string speakerName = "Персонаж";
+    [SerializeField] private string speakerName = "РџРµСЂСЃРѕРЅР°Р¶";
     [SerializeField] private Sprite speakerPortrait;
     [SerializeField] private bool showSpeakerInAutoDialogue = false;
 
-    [Header("Баннер (если тип Banner)")]
-    [SerializeField] private string bannerText = "Информация";
+    [Header("Р‘Р°РЅРЅРµСЂ (РµСЃР»Рё С‚РёРї Banner)")]
+    [SerializeField] private string bannerText = "РРЅС„РѕСЂРјР°С†РёСЏ";
     [SerializeField] private float bannerDuration = 3f;
 
-    [Header("Визуальные подсказки")]
-    [SerializeField] private GameObject interactionHint;
-    [SerializeField] private bool showHintOnlyWhenClose = true;
-
-    [Header("События")]
-    public UnityEvent onInteractionStart;
-    public UnityEvent onInteractionEnd;
-
-    private bool hasBeenUsed;
-    private bool playerInRange;
-    private bool isInteracting;
-    private Coroutine autoTriggerCoroutine;
-
-    private void Start()
+    protected override void ExecuteInteractionLogic()
     {
-        UpdateHintVisibility();
-    }
-
-    private void Update()
-    {
-        HandleAutoTrigger();
-    }
-
-    public void Interact()
-    {
-        if (!CanStartInteraction(requireKeyPressNeeded: true))
-        {
-            return;
-        }
-
-        StartInteraction();
-    }
-
-    private void HandleAutoTrigger()
-    {
-        if (!CanStartInteraction(requireKeyPressNeeded: false))
-        {
-            return;
-        }
-
-        if (autoTriggerDelay <= 0f)
-        {
-            StartInteraction();
-            return;
-        }
-
-        if (autoTriggerCoroutine == null)
-        {
-            autoTriggerCoroutine = StartCoroutine(DelayedAutoTrigger());
-        }
-    }
-
-    private bool CanStartInteraction(bool requireKeyPressNeeded)
-    {
-        if (!playerInRange || hasBeenUsed || isInteracting)
-        {
-            return false;
-        }
-
-        if (requireKeyPressNeeded)
-        {
-            return requireKeyPress;
-        }
-
-        return autoTrigger && !requireKeyPress;
-    }
-
-    private IEnumerator DelayedAutoTrigger()
-    {
-        yield return new WaitForSeconds(autoTriggerDelay);
-        autoTriggerCoroutine = null;
-
-        if (CanStartInteraction(requireKeyPressNeeded: false))
-        {
-            StartInteraction();
-        }
-    }
-
-    private void StartInteraction()
-    {
-        if (isInteracting)
-        {
-            return;
-        }
-
-        isInteracting = true;
-        if (oneTimeOnly)
-        {
-            hasBeenUsed = true;
-        }
-
-        onInteractionStart?.Invoke();
-
         switch (interactionType)
         {
             case InteractionType.Dialogue:
@@ -129,18 +31,10 @@ public class InteractionTrigger : MonoBehaviour, IInteractable
                 StartBanner();
                 break;
         }
-
-        UpdateHintVisibility();
     }
 
     private void StartDialogue()
     {
-        if (BannerManager.Instance != null && BannerManager.Instance.IsShowing)
-        {
-            EndInteraction();
-            return;
-        }
-
         if (DialogueManager.Instance == null || DialogueManager.Instance.IsDialogueActive)
         {
             EndInteraction();
@@ -151,7 +45,7 @@ public class InteractionTrigger : MonoBehaviour, IInteractable
         DialogueData dialogueToUse = GetDialogueToUse(hasRequiredItem);
         if (dialogueToUse == null)
         {
-            Debug.LogWarning($"{name}: Нет диалога!");
+            Debug.LogWarning($"{name}: РќРµС‚ РґРёР°Р»РѕРіР°!");
             EndInteraction();
             return;
         }
@@ -169,18 +63,15 @@ public class InteractionTrigger : MonoBehaviour, IInteractable
 
     private void StartBanner()
     {
-        if (DialogueManager.Instance != null && DialogueManager.Instance.IsDialogueActive)
-        {
-            EndInteraction();
-            return;
-        }
-
+        Debug.Log($"[InteractionTrigger] StartBanner() РІС‹Р·РІР°РЅ РґР»СЏ {gameObject.name}");
         if (BannerManager.Instance == null)
         {
+            Debug.LogError($"[InteractionTrigger] РћРЁРР‘РљРђ: BannerManager.Instance Р РђР’Р•Рќ NULL! РЈР±РµРґРёС‚РµСЃСЊ, С‡С‚Рѕ СЃРєСЂРёРїС‚ BannerManager РёР»Рё РєР°РЅРІР°СЃ СЃ РЅРёРј Р°РєС‚РёРІРµРЅ РЅР° СЃС†РµРЅРµ!");
             EndInteraction();
             return;
         }
 
+        Debug.Log($"[InteractionTrigger] РџРµСЂРµРґР°С‡Р° С‚РµРєСЃС‚Р° Р±Р°РЅРЅРµСЂСѓ: {bannerText}");
         BannerManager.Instance.OnBannerHidden += OnBannerEnded;
         BannerManager.Instance.ShowBanner(bannerText, bannerDuration);
     }
@@ -191,7 +82,6 @@ public class InteractionTrigger : MonoBehaviour, IInteractable
         {
             DialogueManager.Instance.OnDialogueEnded -= OnDialogueEnded;
         }
-
         EndInteraction();
     }
 
@@ -201,39 +91,20 @@ public class InteractionTrigger : MonoBehaviour, IInteractable
         {
             BannerManager.Instance.OnBannerHidden -= OnBannerEnded;
         }
-
         EndInteraction();
-    }
-
-    private void EndInteraction()
-    {
-        onInteractionEnd?.Invoke();
-        isInteracting = false;
-        StopAutoTriggerCoroutine();
-        UpdateHintVisibility();
     }
 
     private bool CheckRequiredItem()
     {
-        if (!requireItem || requiredItem == null)
-        {
-            return true;
-        }
-
-        if (InventoryManager.Instance == null)
-        {
-            return false;
-        }
+        if (!requireItem || requiredItem == null) return true;
+        if (InventoryManager.Instance == null) return false;
 
         return InventoryManager.Instance.PlayerInventory.HasItem(requiredItem.itemId);
     }
 
     private void ConsumeRequiredItem()
     {
-        if (InventoryManager.Instance == null)
-        {
-            return;
-        }
+        if (InventoryManager.Instance == null) return;
 
         var inventory = InventoryManager.Instance.PlayerInventory;
         var slots = inventory.Slots;
@@ -243,7 +114,7 @@ public class InteractionTrigger : MonoBehaviour, IInteractable
             if (!slots[i].IsEmpty && slots[i].itemData.itemId == requiredItem.itemId)
             {
                 inventory.RemoveItem(i, 1);
-                Debug.Log($"Использован предмет: {requiredItem.itemName}");
+                Debug.Log($"РСЃРїРѕР»СЊР·РѕРІР°РЅ РїСЂРµРґРјРµС‚: {requiredItem.itemName}");
                 break;
             }
         }
@@ -251,78 +122,16 @@ public class InteractionTrigger : MonoBehaviour, IInteractable
 
     private DialogueData GetDialogueToUse(bool hasRequiredItem)
     {
-        if (hasRequiredItem && mainDialogue != null)
-        {
-            return mainDialogue;
-        }
-
-        if (alternativeDialogue != null)
-        {
-            return alternativeDialogue;
-        }
-
+        if (hasRequiredItem && mainDialogue != null) return mainDialogue;
+        if (alternativeDialogue != null) return alternativeDialogue;
         return mainDialogue;
     }
 
-    private void OnTriggerEnter2D(Collider2D other)
+    protected override void OnDisable()
     {
-        if (!other.CompareTag("Player"))
-        {
-            return;
-        }
-
-        playerInRange = true;
-        UpdateHintVisibility();
-    }
-
-    private void OnTriggerExit2D(Collider2D other)
-    {
-        if (!other.CompareTag("Player"))
-        {
-            return;
-        }
-
-        playerInRange = false;
-        StopAutoTriggerCoroutine();
-        UpdateHintVisibility();
-    }
-
-    private void StopAutoTriggerCoroutine()
-    {
-        if (autoTriggerCoroutine != null)
-        {
-            StopCoroutine(autoTriggerCoroutine);
-            autoTriggerCoroutine = null;
-        }
-    }
-
-    private void UpdateHintVisibility()
-    {
-        if (interactionHint == null)
-        {
-            return;
-        }
-
-        bool shouldShowWhenClose = !hasBeenUsed && playerInRange && !isInteracting;
-        interactionHint.SetActive(showHintOnlyWhenClose ? shouldShowWhenClose : !hasBeenUsed);
-    }
-
-    private void OnDisable()
-    {
-        StopAutoTriggerCoroutine();
-
-        if (DialogueManager.Instance != null)
-        {
-            DialogueManager.Instance.OnDialogueEnded -= OnDialogueEnded;
-        }
-
-        if (BannerManager.Instance != null)
-        {
-            BannerManager.Instance.OnBannerHidden -= OnBannerEnded;
-        }
-
-        isInteracting = false;
-        UpdateHintVisibility();
+        base.OnDisable();
+        if (DialogueManager.Instance != null) DialogueManager.Instance.OnDialogueEnded -= OnDialogueEnded;
+        if (BannerManager.Instance != null) BannerManager.Instance.OnBannerHidden -= OnBannerEnded;
     }
 
     public enum InteractionType

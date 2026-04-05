@@ -1,0 +1,167 @@
+﻿using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerInteract : MonoBehaviour
+{
+    [Header("Interaction Settings")]
+    [SerializeField] private float interactRange = 3f;
+    [SerializeField] private LayerMask interactableMask = ~0;
+
+    [Header("Debug")]
+    [SerializeField] private bool showDebug = true;
+
+    private readonly List<IInteractable> interactablesInRange = new List<IInteractable>();
+
+    private void Update()
+    {
+        UpdateInteractablesList();
+        HandleInteraction();
+        HandleLegacySaveLoadHotkeys();
+
+        if (showDebug && Input.GetKeyDown(KeyCode.I))
+        {
+            Debug.Log(GetDebugInfo());
+        }
+    }
+
+    private void UpdateInteractablesList()
+    {
+        interactablesInRange.Clear();
+
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, interactRange, interactableMask);
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider2D collider = colliders[i];
+            IInteractable interactable = collider.GetComponent<IInteractable>();
+            if (interactable != null && !interactablesInRange.Contains(interactable))
+            {
+                interactablesInRange.Add(interactable);
+            }
+        }
+    }
+
+    private void HandleInteraction()
+    {
+        if (GameInput.Instance == null)
+        {
+            return;
+        }
+
+        if (!GameInput.Instance.IsInteractPressed())
+        {
+            return;
+        }
+
+        IInteractable closest = GetClosestInteractable();
+        if (closest != null)
+        {
+            Debug.Log($"Взаимодействие с: {((MonoBehaviour)closest).name}");
+            closest.Interact();
+        }
+        else
+        {
+            Debug.Log("Нет объектов для взаимодействия в радиусе");
+        }
+    }
+
+    private void HandleLegacySaveLoadHotkeys()
+    {
+        if (DataCoordinator.Instance == null)
+        {
+            return;
+        }
+
+        if (Input.GetKeyDown(KeyCode.F5) && InventoryManager.Instance != null)
+        {
+            DataCoordinator.Instance.SaveGame();
+            Debug.Log("Быстрое сохранение выполнено!");
+        }
+
+        if (Input.GetKeyDown(KeyCode.F9))
+        {
+            DataCoordinator.Instance.LoadGame();
+            Debug.Log("Загрузка сохранения!");
+        }
+    }
+
+    private IInteractable GetClosestInteractable()
+    {
+        if (interactablesInRange.Count == 0)
+        {
+            return null;
+        }
+
+        if (interactablesInRange.Count == 1)
+        {
+            return interactablesInRange[0];
+        }
+
+        IInteractable closest = null;
+        float closestDistance = float.MaxValue;
+
+        for (int i = 0; i < interactablesInRange.Count; i++)
+        {
+            var interactable = interactablesInRange[i];
+            MonoBehaviour mono = interactable as MonoBehaviour;
+            if (mono == null)
+            {
+                continue;
+            }
+
+            float distance = Vector2.Distance(transform.position, mono.transform.position);
+            if (distance < closestDistance)
+            {
+                closestDistance = distance;
+                closest = interactable;
+            }
+        }
+
+        return closest;
+    }
+
+    private string GetDebugInfo()
+    {
+        string info = "=== PlayerInteract Debug ===\n";
+        info += $"Position: {transform.position}\n";
+        info += $"Range: {interactRange}\n";
+        info += $"Objects in range: {interactablesInRange.Count}\n";
+
+        for (int i = 0; i < interactablesInRange.Count; i++)
+        {
+            var interactable = interactablesInRange[i];
+            MonoBehaviour mono = interactable as MonoBehaviour;
+            if (mono == null)
+            {
+                continue;
+            }
+
+            float distance = Vector2.Distance(transform.position, mono.transform.position);
+            info += $" - {mono.name} ({distance:F1} units)\n";
+        }
+
+        info += $"Input Status: {GameInput.Instance?.GetInputStatus()}\n";
+
+        return info;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(transform.position, interactRange);
+
+        if (!Application.isPlaying || !showDebug)
+        {
+            return;
+        }
+
+        Gizmos.color = Color.yellow;
+        for (int i = 0; i < interactablesInRange.Count; i++)
+        {
+            MonoBehaviour mono = interactablesInRange[i] as MonoBehaviour;
+            if (mono != null)
+            {
+                Gizmos.DrawLine(transform.position, mono.transform.position);
+            }
+        }
+    }
+}

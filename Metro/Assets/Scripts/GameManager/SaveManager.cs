@@ -1,14 +1,14 @@
-using System.IO;
+п»їusing System.IO;
 using UnityEngine;
 
 /// <summary>
-/// Только сохранение/загрузка файлов. Никакой игровой логики.
+/// РўРѕР»СЊРєРѕ СЃРѕС…СЂР°РЅРµРЅРёРµ/Р·Р°РіСЂСѓР·РєР° С„Р°Р№Р»РѕРІ. РќРёРєР°РєРѕР№ РёРіСЂРѕРІРѕР№ Р»РѕРіРёРєРё.
 /// </summary>
 public class SaveManager : MonoBehaviour
 {
     public static SaveManager Instance { get; private set; }
 
-    [Header("Настройки сохранения")]
+    [Header("РќР°СЃС‚СЂРѕР№РєРё СЃРѕС…СЂР°РЅРµРЅРёСЏ")]
     [SerializeField] private string saveFileName = "savegame.json";
     [SerializeField] private bool useEncryption = false;
 
@@ -33,7 +33,7 @@ public class SaveManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad(gameObject); // : РёР·РЅРµРЅРЅС‹Р№ С†РёРєР» С‚РµРїРµСЂСЊ СѓРїСЂР°РІР»СЏРµС‚СЃСЏ CoreManager!
         return true;
     }
 
@@ -41,7 +41,7 @@ public class SaveManager : MonoBehaviour
     {
         if (data == null)
         {
-            Debug.LogError("SaveManager: попытка сохранить null данные");
+            Debug.LogError("SaveManager: РїРѕРїС‹С‚РєР° СЃРѕС…СЂР°РЅРёС‚СЊ null РґР°РЅРЅС‹Рµ");
             return;
         }
 
@@ -57,7 +57,7 @@ public class SaveManager : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"SaveManager: ошибка сохранения - {e.Message}");
+            Debug.LogError($"SaveManager: РѕС€РёР±РєР° СЃРѕС…СЂР°РЅРµРЅРёСЏ - {e.Message}");
         }
     }
 
@@ -80,7 +80,7 @@ public class SaveManager : MonoBehaviour
         }
         catch (System.Exception e)
         {
-            Debug.LogError($"SaveManager: ошибка загрузки - {e.Message}");
+            Debug.LogError($"SaveManager: РѕС€РёР±РєР° Р·Р°РіСЂСѓР·РєРё - {e.Message}");
             return null;
         }
     }
@@ -102,11 +102,11 @@ public class SaveManager : MonoBehaviour
     {
         if (!SaveFileExists())
         {
-            return "Нет сохранения";
+            return "РќРµС‚ СЃРѕС…СЂР°РЅРµРЅРёСЏ";
         }
 
         var fileInfo = new FileInfo(saveFilePath);
-        return $"Сохранение: {fileInfo.LastWriteTime:g}, {fileInfo.Length / 1024}KB";
+        return $"РЎРѕС…СЂР°РЅРµРЅРёРµ: {fileInfo.LastWriteTime:g}, {fileInfo.Length / 1024}KB";
     }
 
     private static string SimpleEncrypt(string data)
@@ -124,7 +124,7 @@ public class SaveManager : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    [ContextMenu("Тест: Создать тестовое сохранение")]
+    [ContextMenu("РўРµСЃС‚: РЎРѕР·РґР°С‚СЊ С‚РµСЃС‚РѕРІРѕРµ СЃРѕС…СЂР°РЅРµРЅРёРµ")]
     private void TestCreateSave()
     {
         var testData = new GameData();
@@ -133,17 +133,17 @@ public class SaveManager : MonoBehaviour
         SaveToFile(testData);
     }
 
-    [ContextMenu("Тест: Загрузить и показать")]
+    [ContextMenu("РўРµСЃС‚: Р—Р°РіСЂСѓР·РёС‚СЊ Рё РїРѕРєР°Р·Р°С‚СЊ")]
     private void TestLoadAndShow()
     {
         var data = LoadFromFile();
         if (data != null)
         {
-            Debug.Log($"Загружено: здоровье={data.currentHealth}, сцена={data.lastCheckpointScene}");
+            Debug.Log($"Р—Р°РіСЂСѓР¶РµРЅРѕ: Р·РґРѕСЂРѕРІСЊРµ={data.currentHealth}, СЃС†РµРЅР°={data.lastCheckpointScene}");
         }
     }
 
-    [ContextMenu("Тест: Удалить сохранение")]
+    [ContextMenu("РўРµСЃС‚: РЈРґР°Р»РёС‚СЊ СЃРѕС…СЂР°РЅРµРЅРёРµ")]
     private void TestDeleteSave()
     {
         DeleteSaveFile();

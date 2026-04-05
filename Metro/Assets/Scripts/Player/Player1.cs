@@ -4,23 +4,25 @@ public class Player1 : MonoBehaviour
 {
     public static Player1 Instance { get; private set; }
 
-    [Header("������ �� ������")]
-    [SerializeField] private PlayerDataSO playerData;
+    [Header("Настройки")]
+    [SerializeField] private float baseMoveSpeed = 5f;
+    [SerializeField] private float sprintMultiplier = 1.5f;
+    [SerializeField] private GameObject flashlightPrefab;
+    [SerializeField] private Vector3 flashlightOffset = new Vector3(0.2f, 0.1f, 0);
 
-    [Header("��������� ��������")]
-    private float baseMoveSpeed = 5f;
-    private float sprintMultiplier = 1.5f;
-
-    [Header("����������")]
+    [Header("Компоненты")]
     private Rigidbody2D rb;
     private Flashlight flashlight;
 
-    [Header("���������")]
+    [Header("Состояния")]
     private Vector2 lastMovementDirection = Vector2.down;
     private bool isMoving;
     private bool isRunning;
     private bool isSprinting;
     private float minMovingThreshold = 0.1f;
+
+    [Header("Ссылки на данные")]
+    [SerializeField] private PlayerDataSO playerData;
 
     public Vector2 LastMovementDirection => lastMovementDirection;
     public bool IsMoving => isMoving;
@@ -37,8 +39,39 @@ public class Player1 : MonoBehaviour
 
         rb = GetComponent<Rigidbody2D>();
         flashlight = GetComponentInChildren<Flashlight>();
+    }
+
+    private void Start()
+    {
+        // Проверяем авто-спавн в Start, когда все менеджеры уже проснулись
+        if (flashlight == null)
+        {
+            if (ProgressManager.Instance == null)
+            {
+                Debug.LogWarning("[Player1] Не удалось проверить фонарик: ProgressManager.Instance == null");
+            }
+            else if (ProgressManager.Instance.HasFlashlight)
+            {
+                SpawnFlashlight();
+            }
+            else
+            {
+                Debug.Log("[Player1] Авто-спавн пропущен: фонарик еще не разблокирован.");
+            }
+        }
 
         InitializeFromData();
+    }
+
+    private void SpawnFlashlight()
+    {
+        if (flashlightPrefab != null)
+        {
+            GameObject instance = Instantiate(flashlightPrefab, transform);
+            instance.transform.localPosition = flashlightOffset;
+            flashlight = instance.GetComponent<Flashlight>();
+            Debug.Log("[Player1] Фонарик автоматически восстановлен из префаба.");
+        }
     }
 
     private bool TryInitializeSingleton()

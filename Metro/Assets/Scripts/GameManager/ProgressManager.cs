@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Управление прогрессом игры: диалоги, квесты, события
+/// РЈРїСЂР°РІР»РµРЅРёРµ РїСЂРѕРіСЂРµСЃСЃРѕРј РёРіСЂС‹: РґРёР°Р»РѕРіРё, РєРІРµСЃС‚С‹, СЃРѕР±С‹С‚РёСЏ
 /// </summary>
 public class ProgressManager : MonoBehaviour
 {
@@ -10,9 +10,13 @@ public class ProgressManager : MonoBehaviour
 
     private readonly HashSet<string> completedDialoguePoints = new HashSet<string>();
     private readonly HashSet<string> permanentlyCollectedItems = new HashSet<string>();
+    private readonly HashSet<string> playedCutsceneIds = new HashSet<string>();
+
+    public bool HasFlashlight { get; private set; }
 
     public HashSet<string> CompletedDialoguePoints => completedDialoguePoints;
     public HashSet<string> PermanentlyCollectedItems => permanentlyCollectedItems;
+    public HashSet<string> PlayedCutsceneIds => playedCutsceneIds;
 
     private void Awake()
     {
@@ -31,7 +35,7 @@ public class ProgressManager : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+        // DontDestroyOnLoad(gameObject); // : РёР·РЅРµРЅРЅС‹Р№ С†РёРєР» С‚РµРїРµСЂСЊ СѓРїСЂР°РІР»СЏРµС‚СЃСЏ CoreManager!
         return true;
     }
 
@@ -75,37 +79,60 @@ public class ProgressManager : MonoBehaviour
         permanentlyCollectedItems.Clear();
     }
 
+    // --- РљР°С‚СЃС†РµРЅС‹ ---
+
+    public void MarkCutsceneAsPlayed(string cutsceneId)
+    {
+        if (string.IsNullOrEmpty(cutsceneId)) return;
+        playedCutsceneIds.Add(cutsceneId);
+        Debug.Log($"[ProgressManager] РљР°С‚СЃС†РµРЅР° {cutsceneId} РїРѕРјРµС‡РµРЅР° РєР°Рє РїСЂРѕСЃРјРѕС‚СЂРµРЅРЅР°СЏ.");
+    }
+
+    public bool IsCutscenePlayed(string cutsceneId)
+    {
+        if (string.IsNullOrEmpty(cutsceneId)) return false;
+        return playedCutsceneIds.Contains(cutsceneId);
+    }
+
+    // --- Р¤РѕРЅР°СЂРёРє ---
+
+    public void SetFlashlightUnlocked(bool unlocked)
+    {
+        HasFlashlight = unlocked;
+        Debug.Log($"[ProgressManager] РЎРѕСЃС‚РѕСЏРЅРёРµ С„РѕРЅР°СЂРёРєР° РёР·РјРµРЅРµРЅРѕ РЅР°: {unlocked}");
+    }
+
     public void LoadFromGameData(GameData data)
     {
-        if (data == null)
-        {
-            return;
-        }
+        if (data == null) return;
 
         CopyToSet(completedDialoguePoints, data.completedDialoguePoints);
         CopyToSet(permanentlyCollectedItems, data.permanentlyCollectedItemIds);
+        CopyToSet(playedCutsceneIds, data.playedCutsceneIds);
+        HasFlashlight = data.hasFlashlight;
     }
 
     public void SaveToGameData(GameData data)
     {
-        if (data == null)
-        {
-            return;
-        }
+        if (data == null) return;
 
         CopyToList(data.completedDialoguePoints, completedDialoguePoints);
         CopyToList(data.permanentlyCollectedItemIds, permanentlyCollectedItems);
+        CopyToList(data.playedCutsceneIds, playedCutsceneIds);
+        data.hasFlashlight = HasFlashlight;
     }
 
     public string GetProgressInfo()
     {
-        return $"Прогресс: {completedDialoguePoints.Count} диалогов, {permanentlyCollectedItems.Count} предметов";
+        return $"РџСЂРѕРіСЂРµСЃСЃ: {completedDialoguePoints.Count} РґРёР°Р»РѕРіРѕРІ, {permanentlyCollectedItems.Count} РїСЂРµРґРјРµС‚РѕРІ, {playedCutsceneIds.Count} РєР°С‚СЃС†РµРЅ. Р¤РѕРЅР°СЂРёРє: {HasFlashlight}";
     }
 
     public void ResetAllProgress()
     {
         ResetDialogueProgress();
         ResetCollectedItems();
+        playedCutsceneIds.Clear();
+        HasFlashlight = false;
     }
 
     private static void CopyToSet(HashSet<string> target, List<string> source)
@@ -136,25 +163,25 @@ public class ProgressManager : MonoBehaviour
     }
 
 #if UNITY_EDITOR
-    [ContextMenu("Тест: Добавить тестовую точку")]
+    [ContextMenu("РўРµСЃС‚: Р”РѕР±Р°РІРёС‚СЊ С‚РµСЃС‚РѕРІСѓСЋ С‚РѕС‡РєСѓ")]
     private void TestAddDialoguePoint()
     {
         MarkDialoguePointCompleted("test_point_" + Random.Range(1, 100));
     }
 
-    [ContextMenu("Тест: Добавить тестовый предмет")]
+    [ContextMenu("РўРµСЃС‚: Р”РѕР±Р°РІРёС‚СЊ С‚РµСЃС‚РѕРІС‹Р№ РїСЂРµРґРјРµС‚")]
     private void TestAddItem()
     {
         MarkItemAsPermanentlyCollected("test_item_" + Random.Range(1, 100));
     }
 
-    [ContextMenu("Тест: Показать информацию")]
+    [ContextMenu("РўРµСЃС‚: РџРѕРєР°Р·Р°С‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ")]
     private void TestInfo()
     {
         Debug.Log(GetProgressInfo());
     }
 
-    [ContextMenu("Тест: Сбросить всё")]
+    [ContextMenu("РўРµСЃС‚: РЎР±СЂРѕСЃРёС‚СЊ РІСЃС‘")]
     private void TestReset()
     {
         ResetAllProgress();

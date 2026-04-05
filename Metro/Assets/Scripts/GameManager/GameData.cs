@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
@@ -26,6 +26,7 @@ public class GameData
     // Прогресс
     public List<string> completedDialoguePoints = new List<string>();
     public List<string> permanentlyCollectedItemIds = new List<string>();
+    public List<string> playedCutsceneIds = new List<string>();
 
     // Направление игрока
     public Vector2 playerLastDirection = Vector2.down;
@@ -61,6 +62,7 @@ public class GameData
 
         completedDialoguePoints.Clear();
         permanentlyCollectedItemIds.Clear();
+        playedCutsceneIds.Clear();
 
         for (int i = 0; i < inventorySlots.Length; i++)
         {

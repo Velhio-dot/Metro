@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System.Collections;
@@ -32,6 +32,12 @@ public class DialogueManager : MonoBehaviour
 
     public bool IsDialogueActive => isActive;
 
+    /// <summary>
+    /// Если true, после завершения диалога управление игроку НЕ вернется автоматически.
+    /// Полезно для перехода в катсцены.
+    /// </summary>
+    public bool ShouldDeferPlayerControl { get; set; }
+
     void Awake()
     {
         if (Instance == null)
@@ -49,7 +55,8 @@ public class DialogueManager : MonoBehaviour
 
     void Update()
     {
-        if (isActive && Input.GetKeyDown(continueKey))
+        // Теперь и E, и Пробел будут листать диалог
+        if (isActive && (Input.GetKeyDown(continueKey) || Input.GetKeyDown(KeyCode.Space)))
         {
             if (isTyping)
             {
@@ -158,9 +165,22 @@ public class DialogueManager : MonoBehaviour
         HideDialogue();
         isActive = false;
 
-        // Возвращаем управление
-        if (Player1.Instance != null)
+        StartCoroutine(EndDialogueCoroutine());
+    }
+
+    IEnumerator EndDialogueCoroutine()
+    {
+        // Пропускаем один кадр. Это гарантирует, что кнопка E (на которую
+        // мы нажали, чтобы закрыть диалог) не считается скриптом игрока
+        // как нажатие для ОТКРЫТИЯ диалога в этом же самом кадре!
+        yield return null;
+
+        // Возвращаем управление, если не было указано иное
+        if (!ShouldDeferPlayerControl && Player1.Instance != null)
             Player1.Instance.enabled = true;
+
+        // Сбрасываем флаг задержки для следующего диалога
+        ShouldDeferPlayerControl = false;
 
         // Сбрасываем
         currentDialogue = null;

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class FlashlightItem : MonoBehaviour, IInteractable
 {
@@ -46,7 +46,15 @@ public class FlashlightItem : MonoBehaviour, IInteractable
         // 3. ДАЕМ ФОНАРИК ИГРОКУ (старый метод)
         player.SetFlashlight(flashlightComponent);
 
-    
+        // 4. РАЗБЛОКИРОВКА В СИСТЕМЕ ПРОГРЕССА
+        if (ProgressManager.Instance != null)
+        {
+            ProgressManager.Instance.SetFlashlightUnlocked(true);
+        }
+        else
+        {
+            Debug.LogWarning("[FlashlightItem] ProgressManager.Instance не найден для разблокировки!");
+        }
 
         // 6. ЗВУК И ВИЗУАЛЬНЫЕ ЭФФЕКТЫ
         PlayPickupEffects();
