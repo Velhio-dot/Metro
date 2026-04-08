@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.Playables;
 
 /// <summary>
@@ -33,12 +33,31 @@ public class SimpleCutsceneTrigger : MonoBehaviour
     private bool isPlaying = false;
     private Player1 player;
 
+    void Awake()
+    {
+        // Немедленная инициализация для playOnStart
+        if (playOnStart && timeline != null)
+        {
+            // Проверяем сохраненную пройденность прямо в Awake
+            if (playOnce && !string.IsNullOrEmpty(saveKey))
+            {
+                hasBeenPlayed = PlayerPrefs.GetInt(saveKey, 0) == 1;
+            }
+
+            if (!hasBeenPlayed)
+            {
+                timeline.time = 0;
+                timeline.Evaluate(); // Сразу ставим персонажей на места
+            }
+        }
+    }
+
     void Start()
     {
         player = Player1.Instance;
 
-        // Проверяем сохраненную пройденность
-        if (playOnce && !string.IsNullOrEmpty(saveKey))
+        // Проверяем сохраненную пройденность (если еще не проверили в Awake)
+        if (playOnce && !string.IsNullOrEmpty(saveKey) && !hasBeenPlayed)
         {
             hasBeenPlayed = PlayerPrefs.GetInt(saveKey, 0) == 1;
         }

@@ -20,6 +20,8 @@ public class Player1 : MonoBehaviour
     private bool isRunning;
     private bool isSprinting;
     private float minMovingThreshold = 0.1f;
+    private bool hasControl = true;
+    private Vector2 forceMoveDirection = Vector2.zero;
 
     [Header("Ссылки на данные")]
     [SerializeField] private PlayerDataSO playerData;
@@ -29,6 +31,7 @@ public class Player1 : MonoBehaviour
     public bool IsRunning => isRunning;
     public bool IsSprint => isSprinting;
     public bool IsSprinting => isSprinting;
+    public bool HasControl => hasControl;
 
     private void Awake()
     {
@@ -114,7 +117,16 @@ public class Player1 : MonoBehaviour
             return;
         }
 
-        Vector2 input = GameInput.Instance.GetMovement();
+        Vector2 input;
+        if (hasControl)
+        {
+            input = GameInput.Instance.GetMovement();
+        }
+        else
+        {
+            input = forceMoveDirection;
+        }
+
         bool movingNow = input.magnitude > minMovingThreshold;
 
         isMoving = movingNow;
@@ -128,6 +140,22 @@ public class Player1 : MonoBehaviour
 
         float currentSpeed = isSprinting ? baseMoveSpeed * sprintMultiplier : baseMoveSpeed;
         rb.MovePosition(rb.position + input * (currentSpeed * Time.fixedDeltaTime));
+    }
+
+    public void SetControl(bool state)
+    {
+        hasControl = state;
+        if (!state)
+        {
+            forceMoveDirection = Vector2.zero;
+            isMoving = false;
+            isRunning = false;
+        }
+    }
+
+    public void SetForceMove(Vector2 direction)
+    {
+        forceMoveDirection = direction;
     }
 
     public void SetFlashlight(Flashlight newFlashlight)

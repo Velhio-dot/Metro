@@ -1,4 +1,4 @@
-﻿using Metro.Utils;
+using Metro.Utils;
 using UnityEngine;
 using Unity.Collections;
 using System;
@@ -33,6 +33,13 @@ public class EnemyAI : MonoBehaviour
     private Vector2 _lastPosition;
     private Vector3 _lastFleePosition; // Запоминаем куда бежим
     [SerializeField] private EnemyAttack _enemyAttack;
+    
+    [Header("Memory System")]
+    private Vector3 _lastKnownPlayerPosition;
+    private float _searchTimer;
+    [SerializeField] private float _searchWaitTime = 3f;
+    private bool _wasInLightLastFrame = false;
+    private bool _isPlayerInMeleeRange = false;
 
     public bool IsRunning
     {
@@ -53,7 +60,8 @@ public class EnemyAI : MonoBehaviour
         chasing,
         Attacking,
         Death,
-        Fleeing
+        Fleeing,
+        Searching
     }
 
     private void Awake()
@@ -79,19 +87,6 @@ public class EnemyAI : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        State previousState = _currentstate;
-        CheckCurrentState();
-        stateHandler();
-        MovementDirectionHandler();
-
-        // Отладка изменения состояний
-        if (previousState != _currentstate)
-        {
-            Debug.Log($"{gameObject.name} state changed: {previousState} → {_currentstate}");
-        }
-    }
 
     private void CheckCurrentState()
     {
@@ -109,6 +104,12 @@ public class EnemyAI : MonoBehaviour
     private State CalculateNewState()
     {
         if (Player1.Instance == null) return State.Roaming;
+
+        // ПУНКТ 0: Если игрок физически вошел в триггер атаки (кусаем сразу)
+        if (_isPlayerInMeleeRange)
+        {
+            return State.Attacking;
+        }
 
         float distanceToPlayer = Vector3.Distance(transform.position, Player1.Instance.transform.position);
 
@@ -140,7 +141,47 @@ public class EnemyAI : MonoBehaviour
                 return State.chasing;
         }
 
+        // 3. Проверка перехода в режим поиска, если свет пропал
+        if (_wasInLightLastFrame && _currentstate == State.chasing)
+        {
+            // Если мы гнались за игроком из-за света, и свет пропал - идем искать
+            return State.Searching;
+        }
+
+        // Если мы уже ищем, и не нашли игрока, продолжаем искать (пока не истечет время в stateHandler)
+        if (_currentstate == State.Searching)
+        {
+            return State.Searching;
+        }
+
         return State.Roaming;
+    }
+
+    private void Update()
+    {
+        State previousState = _currentstate;
+        
+        // Обновляем состояние света перед расчетами
+        bool isInLight = false;
+        if (Player1.Instance != null) {
+            Flashlight playerFlashlight = Player1.Instance.GetFlashlight();
+            if (playerFlashlight != null && playerFlashlight.IsEnemyInLight(transform)) {
+                isInLight = true;
+                _lastKnownPlayerPosition = Player1.Instance.transform.position;
+            }
+        }
+
+        CheckCurrentState();
+        stateHandler();
+        MovementDirectionHandler();
+
+        _wasInLightLastFrame = isInLight;
+
+        // Отладка изменения состояний
+        if (previousState != _currentstate)
+        {
+            Debug.Log($"{gameObject.name} state changed: {previousState} → {_currentstate}");
+        }
     }
 
     private void HandleStateTransition(State fromState, State toState)
@@ -162,6 +203,11 @@ public class EnemyAI : MonoBehaviour
             case State.Fleeing:
                 _agent.speed = _WalkingSpeed * 1.5f;
                 CalculateFleePosition(); // Сразу вычисляем куда бежать
+                break;
+            case State.Searching:
+                _agent.speed = _WalkingSpeed;
+                _agent.SetDestination(_lastKnownPlayerPosition);
+                _searchTimer = 0f;
                 break;
         }
     }
@@ -187,11 +233,34 @@ public class EnemyAI : MonoBehaviour
             case State.Fleeing:
                 HandleFleeing();
                 break;
+            case State.Searching:
+                HandleSearching();
+                break;
             case State.Death:
                 break;
             default:
             case State.Idle:
                 break;
+        }
+    }
+
+    private void HandleSearching()
+    {
+        // Если дошли до точки или почти дошли
+        if (!_agent.pathPending && _agent.remainingDistance <= _agent.stoppingDistance)
+        {
+            _searchTimer += Time.deltaTime;
+
+            if (_searchTimer >= _searchWaitTime)
+            {
+                // Время вышло, возвращаемся в Roaming (CalculateNewState сделает это автоматом, если мы сбросим состояние)
+                _currentstate = State.Roaming;
+            }
+        }
+        else
+        {
+            // На всякий случай обновляем путь (хотя он задан в HandleStateTransition)
+            _agent.SetDestination(_lastKnownPlayerPosition);
         }
     }
 
@@ -326,5 +395,21 @@ public class EnemyAI : MonoBehaviour
     public State GetCurrentState()
     {
         return _currentstate;
+    }
+
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            _isPlayerInMeleeRange = true;
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            _isPlayerInMeleeRange = false;
+        }
     }
 }

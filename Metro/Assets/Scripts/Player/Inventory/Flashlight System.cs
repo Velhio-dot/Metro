@@ -77,7 +77,10 @@ public class Flashlight : MonoBehaviour
 
         float angleToEnemy = Vector2.Angle(direction, toEnemy.normalized);
         if (angleToEnemy > lightAngle / 2f) return false;
-        if (angleToEnemy < lightAngle || distanceToEnemy < lightRange) ; //Debug.Log("Враг в свету");
+        if (angleToEnemy < lightAngle || distanceToEnemy < lightRange) 
+        {
+            // Debug.Log("Враг в свету");
+        }
 
         RaycastHit2D hit = Physics2D.Raycast(transform.position, toEnemy.normalized, distanceToEnemy, obstacleMask);
         return hit.collider == null;

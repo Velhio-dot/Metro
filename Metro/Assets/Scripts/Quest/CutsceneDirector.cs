@@ -33,6 +33,19 @@ public class CutsceneDirector : MonoBehaviour
         {
             hasBeenPlayed = ProgressManager.Instance.IsCutscenePlayed(cutsceneId);
         }
+
+        // ПРЕ-ИНИЦИАЛИЗАЦИЯ: Если катсцена должна играть на старте, «притягиваем» персонажей к первому кадру СЕЙЧАС.
+        if (playOnStart && !hasBeenPlayed && director != null)
+        {
+            director.time = 0;
+            director.Evaluate(); // Магия: обновляет позиции объектов по таймлайну мгновенно
+
+            if (disablePlayerOnStart)
+            {
+                // Попробуем отключить игрока сразу, если он уже есть в Instance
+                DisablePlayerControl();
+            }
+        }
     }
 
     void Start()
@@ -50,7 +63,7 @@ public class CutsceneDirector : MonoBehaviour
             if (disablePlayerOnStart)
             {
                 DisablePlayerControl();
-                Invoke("Play", 0.5f);
+                Play(); // Никаких задержек Invoke("Play", 0.5f), запускаем сразу!
             }
             else
             {

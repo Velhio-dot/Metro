@@ -25,9 +25,14 @@ public class MainMenuManager : MonoBehaviour
 
     private void Start()
     {
-        if (sceneFader == null)
+        // Пытаемся найти фейдер через CoreManager или напрямую
+        if (CoreManager.Instance != null && CoreManager.Instance.Fader != null)
         {
-            sceneFader = FindObjectOfType<SceneFader>();
+            sceneFader = CoreManager.Instance.Fader;
+        }
+        else if (sceneFader == null)
+        {
+            sceneFader = FindFirstObjectByType<SceneFader>();
         }
 
         UpdateLoadButtonState();

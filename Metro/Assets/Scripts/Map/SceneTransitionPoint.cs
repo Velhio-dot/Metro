@@ -4,14 +4,16 @@ using System.Collections;
 
 public class SceneTransitionPoint : MonoBehaviour
 {
-    [Header("Настройки перехода")]
-    [SerializeField] private string targetSceneName; // Сцена назначения
-    [SerializeField] private string targetSpawnId; // ID спавна в целевой сцене
+    [Header("РќР°СЃС‚СЂРѕР№РєРё РїРµСЂРµС…РѕРґР°")]
+    [SerializeField] private string targetSceneName; // РЎС†РµРЅР° РЅР°Р·РЅР°С‡РµРЅРёСЏ
+    [SerializeField] private string targetSpawnId; // ID СЃРїР°РІРЅР° РІ С†РµР»РµРІРѕР№ СЃС†РµРЅРµ
 
-    [Header("Визуал")]
+    [Header("Р’РёР·СѓР°Р»")]
     [SerializeField] private bool showGizmo = true;
     [SerializeField] private Color gizmoColor = Color.green;
     [SerializeField] private bool isTransitionLocked = false;
+    [SerializeField] private bool useForceMove = false;
+    [SerializeField] private Vector2 transitionForceDirection = Vector2.zero;
 
     private void OnTriggerEnter2D(Collider2D other)
     {
@@ -23,23 +25,26 @@ public class SceneTransitionPoint : MonoBehaviour
 
     private void InitiateTransition()
     {
-        Debug.Log($"Переход: {targetSceneName} -> спавн {targetSpawnId}");
+        Debug.Log($"РџРµСЂРµС…РѕРґ: {targetSceneName} -> СЃРїР°РІРЅ {targetSpawnId}");
 
-        // Сохраняем целевой спавн в DataCoordinator
-        if (DataCoordinator.Instance != null)
+        // РСЃРїРѕР»СЊР·СѓРµРј РЅРѕРІС‹Р№ SceneFader РґР»СЏ РїРµСЂРµС…РѕРґР°
+        if (CoreManager.Instance != null && CoreManager.Instance.Fader != null)
         {
-            DataCoordinator.Instance.SaveGame();
-            DataCoordinator.Instance.SetTargetSpawn(targetSpawnId);
-        }
-
-        // Используем существующий SceneLoader для перехода
-        if (SceneLoader.Instance != null)
-        {
-            SceneLoader.Instance.LoadScene(targetSceneName, true);
+            CoreManager.Instance.Fader.LoadSceneWithFade(
+                targetSceneName, 
+                true, 
+                targetSpawnId, 
+                useForceMove ? transitionForceDirection : Vector2.zero
+            );
         }
         else
         {
-            // Fallback
+            // Fallback РµСЃР»Рё CoreManager РЅРµ РЅР°Р№РґРµРЅ
+            if (DataCoordinator.Instance != null)
+            {
+                DataCoordinator.Instance.SaveGame();
+                DataCoordinator.Instance.SetTargetSpawn(targetSpawnId);
+            }
             SceneManager.LoadScene(targetSceneName);
         }
     }
@@ -54,14 +59,14 @@ public class SceneTransitionPoint : MonoBehaviour
         {
             Gizmos.DrawWireCube(transform.position + (Vector3)collider.offset, collider.size);
 
-            // Рисуем стрелку
+            // Р РёСЃСѓРµРј СЃС‚СЂРµР»РєСѓ
             Vector3 startPos = transform.position + (Vector3)collider.offset;
             Vector3 endPos = startPos + Vector3.up * 1.5f;
             Gizmos.DrawLine(startPos, endPos);
             Gizmos.DrawLine(endPos, endPos + Vector3.left * 0.3f + Vector3.down * 0.3f);
             Gizmos.DrawLine(endPos, endPos + Vector3.right * 0.3f + Vector3.down * 0.3f);
 
-            // Пишем название целевой сцены
+            // РџРёС€РµРј РЅР°Р·РІР°РЅРёРµ С†РµР»РµРІРѕР№ СЃС†РµРЅС‹
 #if UNITY_EDITOR
             UnityEditor.Handles.Label(startPos + Vector3.up * 1.8f,
                 $"{targetSceneName}\n[{targetSpawnId}]");

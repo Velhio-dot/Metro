@@ -192,11 +192,13 @@ public class DataCoordinator : MonoBehaviour
             return;
         }
 
-        if (SceneLoader.Instance != null)
+        if (CoreManager.Instance != null && CoreManager.Instance.Fader != null)
         {
-            SceneLoader.Instance.LoadScene(currentGame.currentScene, true);
+            CoreManager.Instance.Fader.LoadSceneWithFade(currentGame.currentScene, false); // false, так как данные уже загружены
             return;
         }
+
+        SceneFader.FadeToScene(currentGame.currentScene);
 
         SceneManager.LoadScene(currentGame.currentScene);
     }

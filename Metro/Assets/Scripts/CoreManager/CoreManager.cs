@@ -11,6 +11,7 @@ public class CoreManager : MonoBehaviour
     public SaveManager Save { get; private set; }
     public ProgressManager Progress { get; private set; }
     public GameInput Input { get; private set; }
+    public SceneFader Fader { get; private set; }
 
     [Header("UI Ссылки")]
     [SerializeField] private GameObject uiCanvas;
@@ -35,6 +36,8 @@ public class CoreManager : MonoBehaviour
         Save = GetComponentInChildren<SaveManager>();
         Progress = GetComponentInChildren<ProgressManager>();
         Input = GetComponentInChildren<GameInput>();
+        Fader = GetComponentInChildren<SceneFader>(true); // (true), чтобы найти даже в выключенном состоянии при старте
+        if (Fader == null) Fader = FindFirstObjectByType<SceneFader>();
 
         if (Data == null) Debug.LogWarning("[CoreManager] DataCoordinator не найден!");
         if (Inventory == null) Debug.LogWarning("[CoreManager] InventoryManager не найден!");
