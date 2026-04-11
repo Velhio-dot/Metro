@@ -24,8 +24,9 @@ MonoBehaviour:
     probeSamplingDebugMesh: {fileID: -3555484719484374845, guid: 57d7c4c16e2765b47a4d2069b311bffe, type: 3}
     probeSamplingDebugTexture: {fileID: 2800000, guid: 24ec0e140fb444a44ab96ee80844e18e, type: 3}
     probeVolumeBlendStatesCS: {fileID: 0}
-  m_RendererFeatures: []
-  m_RendererFeatureMap: 
+  m_RendererFeatures:
+  - {fileID: 4888155869171987450}
+  m_RendererFeatureMap: fab3bc4cdd37d643
   m_UseNativeRenderPass: 0
   m_LayerMask:
     serializedVersion: 2
@@ -56,3 +57,22 @@ MonoBehaviour:
   m_PostProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
   m_DefaultMaterialType: 0
   m_DefaultCustomMaterial: {fileID: 2100000, guid: a97c105638bdf8b4a8650670310a4cd3, type: 2}
+--- !u!114 &4888155869171987450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 465249541eea78244a4f0abf7d089f0a, type: 3}
+  m_Name: GPU2DLightFeature
+  m_EditorClassIdentifier: Assembly-CSharp-firstpass::GPU2DLightFeature
+  m_Active: 1
+  settings:
+    occlusionLayer:
+      serializedVersion: 2
+      m_Bits: 64
+    textureResolution: 512
+    renderPassEvent: 550
