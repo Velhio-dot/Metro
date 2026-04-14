@@ -15,7 +15,7 @@ TagManager:
   - 
   - Water
   - UI
-  - 
+  - Floor
   - 
   - Obstacle
   - Enemy
@@ -45,5 +45,12 @@ TagManager:
   - name: Default
     uniqueID: 0
     locked: 0
+  - name: walls
+    uniqueID: 1692225215
+    locked: 0
+  - name: Character
+    uniqueID: 1374373171
+    locked: 0
   m_RenderingLayers:
   - Default
+  m_MigratedRenderPipelines: []
