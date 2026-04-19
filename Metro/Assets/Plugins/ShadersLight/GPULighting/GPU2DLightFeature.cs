@@ -9,8 +9,7 @@ public class GPU2DLightFeature : ScriptableRendererFeature
     [System.Serializable]
     public class Settings
     {
-        [Tooltip("Слой, который будет отбрасывать тени. По умолчанию - Obstacle.")]
-        public LayerMask occlusionLayer = 1 << 8; // Слой Obstacle
+        public LayerMask occlusionLayer;
         public int textureResolution = 512;
         public RenderPassEvent renderPassEvent = RenderPassEvent.AfterRenderingPrePasses;
     }

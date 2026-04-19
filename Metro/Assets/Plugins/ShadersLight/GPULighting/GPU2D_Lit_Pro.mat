@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: GPU2D_Occluder
-  m_Shader: {fileID: 4800000, guid: e260cfa7296ee7642b167f1eb5be5023, type: 3}
+  m_Name: GPU2D_Lit_Pro
+  m_Shader: {fileID: 4800000, guid: b6ca190ead4c21e46a7d00574dcdd929, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -41,10 +41,20 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _Ambient: 0.085
+    - _Cutoff: 0.5
+    - _DebugMode: 0
     - _EnableExternalAlpha: 0
+    - _Intensity: 0.55
+    - _IsWall: 0
+    - _LightHeight: 0.437
+    - _RaySteps: 4
+    - _ShadowBias: 0.0449
+    - _WallHeight: 0.212
     - _ZWrite: 0
     m_Colors:
     - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Flip: {r: 1, g: 1, b: 1, a: 1}
     - _RendererColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

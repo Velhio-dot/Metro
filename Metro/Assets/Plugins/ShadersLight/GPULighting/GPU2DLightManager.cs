@@ -6,9 +6,8 @@ public class GPU2DLightManager : MonoBehaviour
     [Header("Источник света")]
     public Transform lightSource;
     public float lightRadius = 10f;
-    [Range(0, 1)] public float intensity = 1.0f;
+    [Range(0, 5)] public float intensity = 1.0f;
     [Range(0, 1)] public float shadowSoftness = 0.5f;
-    [Range(0, 1)] public float ambient = 0.2f;
 
     void Update()
     {
@@ -19,6 +18,5 @@ public class GPU2DLightManager : MonoBehaviour
         Shader.SetGlobalFloat("_LightRadius", lightRadius);
         Shader.SetGlobalFloat("_GlobalIntensity", intensity);
         Shader.SetGlobalFloat("_ShadowSoftness", shadowSoftness);
-        Shader.SetGlobalFloat("_Ambient", ambient);
     }
 }

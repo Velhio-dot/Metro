@@ -21,6 +21,8 @@ public class LightingManager : MonoBehaviour
     [Header("Материалы")]
     public Material standardMaterial;
     public Material pluginMaterial;
+    [Tooltip("Материал для стен (с включенным Is Wall).")]
+    public Material pluginWallMaterial;
 
     [Header("Настройки Shader Plugin")]
     [Range(0, 1)] public float ambientIntensity = 0.2f;
@@ -36,14 +38,30 @@ public class LightingManager : MonoBehaviour
     [Tooltip("Стандартные источники света Unity, которые нужно выключать при работе плагина.")]
     public List<Light2D> standardLights = new List<Light2D>();
 
+    [Header("Настройки слоев")]
+    [Tooltip("Имя слоя, на котором находятся препятствия (стены). На ноуте это был Слой 6.")]
+    public string wallLayerName = "occlusion";
+    private int wallLayerIndex = 6; 
+
     public void SetLightingTech(LightingTech tech)
     {
         currentTech = tech;
+        UpdateWallLayerIndex();
         ApplySettings();
+    }
+
+    private void UpdateWallLayerIndex()
+    {
+        int layer = LayerMask.NameToLayer(wallLayerName);
+        if (layer != -1) wallLayerIndex = layer;
+        else Debug.LogWarning($"[LightingManager] Слой '{wallLayerName}' не найден. По умолчанию использую индекс {wallLayerIndex}.");
+        
+        Debug.Log($"[LightingManager] Текущий слой окклюзии: {wallLayerIndex} ({wallLayerName})");
     }
 
     private void Awake()
     {
+        UpdateWallLayerIndex();
         SceneManager.sceneLoaded += OnSceneLoaded;
     }
 
@@ -60,45 +78,107 @@ public class LightingManager : MonoBehaviour
     [ContextMenu("Apply Current Settings")]
     public void ApplySettings()
     {
-        bool isPlugin = currentTech == LightingTech.ShaderPlugin;
-        Material targetMat = isPlugin ? pluginMaterial : standardMaterial;
-
-        // 1. Включаем/выключаем контейнеры света
-        if (pluginVolumeContainer != null) pluginVolumeContainer.SetActive(isPlugin);
-        
-        // Включаем/выключаем стандартные источники света
-        foreach (var light in standardLights)
+        try 
         {
-            if (light != null) light.enabled = !isPlugin;
-        }
+            bool isPlugin = currentTech == LightingTech.ShaderPlugin;
+            
+            // 1. Управление компонентами плагина
+            if (isPlugin)
+            {
+                if (pluginVolumeContainer != null) pluginVolumeContainer.SetActive(true);
+                UpdateShaderPluginParameters();
+            }
+            else
+            {
+                if (pluginVolumeContainer != null) pluginVolumeContainer.SetActive(false);
+            }
+            
+            // 2. Стандартные источники света
+            foreach (var light in standardLights)
+            {
+                if (light != null) light.enabled = !isPlugin;
+            }
 
-        // 2. Меняем материалы по всей сцене
-        if (targetMat != null)
+            // 3. Смена материалов
+            SwapAllMaterials();
+
+            Debug.Log($"[LightingManager] Технология освещения переключена на: {currentTech}.");
+        }
+        catch (System.Exception e)
         {
-            SwapAllMaterials(targetMat);
+            Debug.LogError($"[LightingManager] Ошибка при смене освещения: {e.Message}");
         }
-
-        Debug.Log($"[LightingManager] Технология освещения: {currentTech}. Материалы обновлены.");
     }
 
-    private void SwapAllMaterials(Material targetMat)
+    private void SwapAllMaterials()
     {
-        // Ищем вообще все рендереры
+        bool isPlugin = currentTech == LightingTech.ShaderPlugin;
         var renderers = Object.FindObjectsByType<Renderer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         
+        int spriteCount = 0;
+        int wallCount = 0;
+        int skipCount = 0;
+
         foreach (var r in renderers)
         {
             if (r is SpriteRenderer || r is UnityEngine.Tilemaps.TilemapRenderer)
             {
-                // Проверка на исключение (UI Canvas)
+                // Пропускаем UI
                 if (uiCanvas != null && r.transform.IsChildOf(uiCanvas.transform))
                 {
+                    skipCount++;
                     continue;
                 }
 
-                // Меняем материал
-                r.sharedMaterial = targetMat;
+                if (isPlugin)
+                {
+                    // Режим ПЛАГИНА
+                    if (r.gameObject.layer == wallLayerIndex)
+                    {
+                        // Это стена/окно - даем специфичный материал стен (с текстурой)
+                        if (pluginWallMaterial != null)
+                        {
+                            r.sharedMaterial = pluginWallMaterial;
+                            wallCount++;
+                        }
+                        else
+                        {
+                            r.sharedMaterial = pluginMaterial; // Фолбэк на обычный плагин
+                            spriteCount++;
+                        }
+                    }
+                    else
+                    {
+                        // Обычный спрайт
+                        if (pluginMaterial != null)
+                        {
+                            r.sharedMaterial = pluginMaterial;
+                            spriteCount++;
+                        }
+                    }
+                }
+                else
+                {
+                    // Режим СТАНДАРТНЫЙ
+                    if (standardMaterial != null)
+                    {
+                        r.sharedMaterial = standardMaterial;
+                        spriteCount++;
+                    }
+                }
             }
+        }
+        
+        Debug.Log($"[LightingManager] Материалы обновлены. Спрайтов: {spriteCount}, Стен (Occluders): {wallCount}, Пропущено (UI): {skipCount}.");
+    }
+
+    private void UpdateShaderPluginParameters()
+    {
+        // Синхронизируем настройки эмбиента с менеджером плагина
+        var pluginMgr = Object.FindAnyObjectByType<GPU2DLightManager>();
+        if (pluginMgr != null)
+        {
+            pluginMgr.ambient = ambientIntensity;
         }
     }
 }
