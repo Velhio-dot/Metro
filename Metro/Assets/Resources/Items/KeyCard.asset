@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ItemDataSO
   itemId: keycard_security
   itemName: KeyCard
-  icon: {fileID: 250244417, guid: dec9949311e49d741aef814f1e69954b, type: 3}
+  icon: {fileID: -1397428347, guid: 70fb26a541ad21149a4961be5faf039e, type: 3}
   description: 
   type: 0
   isStackable: 0
