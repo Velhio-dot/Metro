@@ -86,7 +86,7 @@ public class LightingManager : MonoBehaviour
             if (isPlugin)
             {
                 if (pluginVolumeContainer != null) pluginVolumeContainer.SetActive(true);
-                UpdateShaderPluginParameters();
+            
             }
             else
             {
@@ -172,13 +172,5 @@ public class LightingManager : MonoBehaviour
         Debug.Log($"[LightingManager] Материалы обновлены. Спрайтов: {spriteCount}, Стен (Occluders): {wallCount}, Пропущено (UI): {skipCount}.");
     }
 
-    private void UpdateShaderPluginParameters()
-    {
-        // Синхронизируем настройки эмбиента с менеджером плагина
-        var pluginMgr = Object.FindAnyObjectByType<GPU2DLightManager>();
-        if (pluginMgr != null)
-        {
-            pluginMgr.ambient = ambientIntensity;
-        }
-    }
+   
 }
